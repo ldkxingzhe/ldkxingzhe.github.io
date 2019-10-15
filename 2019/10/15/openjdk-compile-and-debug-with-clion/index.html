@@ -90,7 +90,7 @@
 <meta property="og:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/openjdk_build_debug_configuration.png">
 <meta property="og:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/openjdk_compile_sigsegv.png">
 <meta property="og:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/openjdk_compile_debug_printversion.png">
-<meta property="og:updated_time" content="2019-10-15T06:46:14.134Z">
+<meta property="og:updated_time" content="2019-10-15T15:56:21.284Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="openjdk12 编译与调试">
 <meta name="twitter:description" content="之所以首先从OpenJDK的源码编译与调试开始，是因为后续的博客在重新整理过程中会加上JDK源码相关的代码验证。本文从源码下载，按需编译，导入clion调试， 笔者在MacOS与Linux验证通过.">
@@ -316,6 +316,7 @@
       
         <p>之所以首先从OpenJDK的源码编译与调试开始，是因为后续的博客在重新整理过程中会加上JDK源码相关的代码验证。本文从源码下载，按需编译，导入clion调试， 笔者在MacOS与Linux验证通过.</p>
 <a id="more"></a>
+
 <h1 id="源码下载"><a href="#源码下载" class="headerlink" title="源码下载"></a>源码下载</h1><p>编译版本为: jdk-12+33, 从openjdk官网下载即可: <a href="http://hg.openjdk.java.net/jdk/jdk/archive/b67884871b5f.tar.bz2" target="_blank" rel="noopener">http://hg.openjdk.java.net/jdk/jdk/archive/b67884871b5f.tar.bz2</a><br>由于是Http协议下载，注意校验完整性，编译完整后也要test一下。</p>
 <p>提供下jdk-12+33这个版本MD5值: f037c5b729bdc4066ada56ae860c0797</p>
 <h1 id="编译配置"><a href="#编译配置" class="headerlink" title="编译配置"></a>编译配置</h1><p>OpenJDK的编译说明在源码的doc/building.md, 仔细阅读下即可.</p>
@@ -468,7 +469,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
