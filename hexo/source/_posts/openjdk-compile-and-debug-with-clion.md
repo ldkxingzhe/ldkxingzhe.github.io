@@ -5,8 +5,8 @@ tags: [jvm, c]
 ---
 
 之所以首先从OpenJDK的源码编译与调试开始，是因为后续的博客在重新整理过程中会加上JDK源码相关的代码验证。本文从源码下载，按需编译，导入clion调试， 笔者在MacOS与Linux验证通过.
-
 <!-- more -->
+
 # 源码下载
 
 编译版本为: jdk-12+33, 从openjdk官网下载即可: <http://hg.openjdk.java.net/jdk/jdk/archive/b67884871b5f.tar.bz2>
