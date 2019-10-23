@@ -79,20 +79,20 @@
 
 
 
-<meta name="description" content="am Android系统的活动管理器, 系统使用AM service管理应用的四大组件, 是Android系统的大管家. 弄明白大管家的工作机制， 方便我们与其打交道. 在阐述工作原理的同时，提供一些工具的使用.  前言ActivityManagerService是一个很庞大的模块, 接口相对简单很多， 通过IActivityManager.aidl的接口定义弄明白对外提供了哪些服务(我们关心的服">
+<meta name="description" content="am Android系统的活动管理器, 系统使用AM service管理应用的四大组件, 是Android系统的大管家. 弄明白大管家的工作机制， 方便我们与其打交道. 在阐述工作原理的同时，提供一些工具的使用.">
 <meta name="keywords" content="android,am">
 <meta property="og:type" content="article">
 <meta property="og:title" content="android-service-am">
 <meta property="og:url" content="http://yoursite.com/2019/10/18/android-service-am/index.html">
 <meta property="og:site_name" content="ldkxingzhe&#39;s blog">
-<meta property="og:description" content="am Android系统的活动管理器, 系统使用AM service管理应用的四大组件, 是Android系统的大管家. 弄明白大管家的工作机制， 方便我们与其打交道. 在阐述工作原理的同时，提供一些工具的使用.  前言ActivityManagerService是一个很庞大的模块, 接口相对简单很多， 通过IActivityManager.aidl的接口定义弄明白对外提供了哪些服务(我们关心的服">
+<meta property="og:description" content="am Android系统的活动管理器, 系统使用AM service管理应用的四大组件, 是Android系统的大管家. 弄明白大管家的工作机制， 方便我们与其打交道. 在阐述工作原理的同时，提供一些工具的使用.">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/ActivityStarter.startActivityUnChecked.svg">
 <meta property="og:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/Activity%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B.png">
-<meta property="og:updated_time" content="2019-10-23T08:20:12.234Z">
+<meta property="og:updated_time" content="2019-10-23T08:23:36.934Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="android-service-am">
-<meta name="twitter:description" content="am Android系统的活动管理器, 系统使用AM service管理应用的四大组件, 是Android系统的大管家. 弄明白大管家的工作机制， 方便我们与其打交道. 在阐述工作原理的同时，提供一些工具的使用.  前言ActivityManagerService是一个很庞大的模块, 接口相对简单很多， 通过IActivityManager.aidl的接口定义弄明白对外提供了哪些服务(我们关心的服">
+<meta name="twitter:description" content="am Android系统的活动管理器, 系统使用AM service管理应用的四大组件, 是Android系统的大管家. 弄明白大管家的工作机制， 方便我们与其打交道. 在阐述工作原理的同时，提供一些工具的使用.">
 <meta name="twitter:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/ActivityStarter.startActivityUnChecked.svg">
 
 
@@ -314,6 +314,7 @@
 
       
         <p>am Android系统的活动管理器, 系统使用AM service管理应用的四大组件, 是Android系统的大管家. 弄明白大管家的工作机制， 方便我们与其打交道. 在阐述工作原理的同时，提供一些工具的使用. </p>
+<a id="more"></a>
 <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>ActivityManagerService是一个很庞大的模块, 接口相对简单很多， 通过IActivityManager.aidl的接口定义弄明白对外提供了哪些服务(我们关心的服务, 关心的话可以自行搜索): </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
