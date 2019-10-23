@@ -4,8 +4,7 @@ date: 2019-10-18 20:04:31
 tags: [android, am]
 ---
 am Android系统的活动管理器, 系统使用AM service管理应用的四大组件, 是Android系统的大管家. 弄明白大管家的工作机制， 方便我们与其打交道. 在阐述工作原理的同时，提供一些工具的使用. 
-
-
+<!--  more -->
 # 前言
 
 ActivityManagerService是一个很庞大的模块, 接口相对简单很多， 通过IActivityManager.aidl的接口定义弄明白对外提供了哪些服务(我们关心的服务, 关心的话可以自行搜索): 
