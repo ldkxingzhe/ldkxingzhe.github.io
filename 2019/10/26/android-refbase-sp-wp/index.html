@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="android,pm,">
+  <meta name="keywords" content="android,refbase,">
 
 
 
@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="pm 是Android的包管理器, 对应着包安装， 删除， 信息查看等操作. 其主Service为 PackageManagerService, 对权限的限制部分也在PackageManagerService中。 由于PM服务中有大量的InstantApp的处理代码， 忽略这部分代码.">
-<meta name="keywords" content="android,pm">
+<meta name="description" content="为了能够自动回收C++的对象， google使用sp与wp两个模板类使用引用计数的方式自动对C++对象进行回收, 作为阅读Android C/C++源码必要的基础, 从源码角度剖析下实现原理">
+<meta name="keywords" content="android,refbase">
 <meta property="og:type" content="article">
-<meta property="og:title" content="android service 之pm">
-<meta property="og:url" content="http://yoursite.com/2019/10/25/android-service-pm/index.html">
+<meta property="og:title" content="Android RefBase类与强弱引用sp,wp">
+<meta property="og:url" content="http://yoursite.com/2019/10/26/android-refbase-sp-wp/index.html">
 <meta property="og:site_name" content="ldkxingzhe&#39;s blog">
-<meta property="og:description" content="pm 是Android的包管理器, 对应着包安装， 删除， 信息查看等操作. 其主Service为 PackageManagerService, 对权限的限制部分也在PackageManagerService中。 由于PM服务中有大量的InstantApp的处理代码， 忽略这部分代码.">
+<meta property="og:description" content="为了能够自动回收C++的对象， google使用sp与wp两个模板类使用引用计数的方式自动对C++对象进行回收, 作为阅读Android C/C++源码必要的基础, 从源码角度剖析下实现原理">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-10-26T10:02:31.694Z">
+<meta property="og:updated_time" content="2019-10-26T10:04:50.510Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="android service 之pm">
-<meta name="twitter:description" content="pm 是Android的包管理器, 对应着包安装， 删除， 信息查看等操作. 其主Service为 PackageManagerService, 对权限的限制部分也在PackageManagerService中。 由于PM服务中有大量的InstantApp的处理代码， 忽略这部分代码.">
+<meta name="twitter:title" content="Android RefBase类与强弱引用sp,wp">
+<meta name="twitter:description" content="为了能够自动回收C++的对象， google使用sp与wp两个模板类使用引用计数的方式自动对C++对象进行回收, 作为阅读Android C/C++源码必要的基础, 从源码角度剖析下实现原理">
 
 
 
@@ -120,13 +120,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2019/10/25/android-service-pm/">
+  <link rel="canonical" href="http://yoursite.com/2019/10/26/android-refbase-sp-wp/">
 
 
 
 
 
-  <title>android service 之pm | ldkxingzhe's blog</title>
+  <title>Android RefBase类与强弱引用sp,wp | ldkxingzhe's blog</title>
   
 
 
@@ -243,7 +243,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/25/android-service-pm/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/26/android-refbase-sp-wp/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="ldkxingzhe">
@@ -260,7 +260,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">android service 之pm</h1>
+          <h1 class="post-title" itemprop="name headline">Android RefBase类与强弱引用sp,wp</h1>
         
 
         <div class="post-meta">
@@ -272,8 +272,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-25T15:19:19+08:00">
-                2019-10-25
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-26T18:02:53+08:00">
+                2019-10-26
               </time>
             
 
@@ -310,43 +310,112 @@
       
 
       
-        <p>pm 是Android的包管理器, 对应着包安装， 删除， 信息查看等操作. 其主Service为 PackageManagerService, 对权限的限制部分也在PackageManagerService中。 由于PM服务中有大量的InstantApp的处理代码， 忽略这部分代码. </p>
+        <p>为了能够自动回收C++的对象， google使用sp与wp两个模板类使用引用计数的方式自动对C++对象进行回收, 作为阅读Android C/C++源码必要的基础, 从源码角度剖析下实现原理</p>
 <a id="more"></a>
 
-<h1 id="源码粗略"><a href="#源码粗略" class="headerlink" title="源码粗略"></a>源码粗略</h1><p>在pm服务中， 有属性mActivities, mReceivers, mServices, mProviders四个IntentResolver， 分别对应Android的四大组件。 在系统启动， 安装， 删除， 移动时这些会进行相应的更新. 而且这些信息是时时刻刻都在内存中的， 可以明确说过多的安装应用， 即使不运行也会拖慢运行速度。 </p>
-<p>PackageManagerService类中有很多get方法用于query. </p>
-<h2 id="mPackages的写入-commitPackageSettings"><a href="#mPackages的写入-commitPackageSettings" class="headerlink" title="mPackages的写入(commitPackageSettings)"></a>mPackages的写入(commitPackageSettings)</h2><p>mPackages作为一个记录包与对应包信息的Map, 其写入是PM服务的第一步. 其写入位置只有一个即</p>
+<h1 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h1><p>RefBase是所有引用计数gc对象的基类, 引入了一个内部属mRefs进行状态维护。 其内部属属性为:</p>
+<pre><code>std::atomic&lt;int32_t&gt;    mStrong;
+std::atomic&lt;int32_t&gt;    mWeak;
+RefBase* const          mBase;     // 指向外部类
+std::atomic&lt;int32_t&gt;    mFlags;</code></pre><p>其中mFlags表示为改对象的生命状态: OBJECT_LIFETIME_STRONG(0x0000), OBJECT_LIFETIME_WEAK(0x0001) 初始值是0， 也即是说整个对象默认是强引用计数.<br>mStrong初始值是(1&lt;&lt;28)一个很大的数字, 代表强引用数量.  mWeak初始值为0, 代表弱引用数量. </p>
+<h1 id="算法"><a href="#算法" class="headerlink" title="算法"></a>算法</h1><p>各属性值的关键节点与描述</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-left">
+</colgroup>
+<tbody>
+<tr>
+<td class="org-right">No</td>
+<td class="org-right">mStrong</td>
+<td class="org-right">mWeak</td>
+<td class="org-right">mFlags</td>
+<td class="org-left">Description</td>
+</tr>
+
+
+<tr>
+<td class="org-right">1</td>
+<td class="org-right">0x10000000000000</td>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+<td class="org-left">初始状态</td>
+</tr>
+
+
+<tr>
+<td class="org-right">2</td>
+<td class="org-right">1</td>
+<td class="org-right">1</td>
+<td class="org-right">0</td>
+<td class="org-left">调用incStrong</td>
+</tr>
+
+
+<tr>
+<td class="org-right">3</td>
+<td class="org-right">0</td>
+<td class="org-right">1</td>
+<td class="org-right">0</td>
+<td class="org-left">调用incWeak</td>
+</tr>
+
+
+<tr>
+<td class="org-right">4</td>
+<td class="org-right">1</td>
+<td class="org-right">2</td>
+<td class="org-right">0</td>
+<td class="org-left">attemptIncStrong</td>
+</tr>
+</tbody>
+</table>
+
+<p>算法在实现过程中, 考虑到了多线程与多CPU架构下对计算指令的影响， 所以使用std::atomic这个原子整数. 算法比较简单: </p>
+<h3 id="incStrong"><a href="#incStrong" class="headerlink" title="incStrong"></a>incStrong</h3><p>强引用计数+1时, 弱引用计数+1</p>
 <ul>
-<li>commitPackageSettings(Package pkg, PackageSetting pkgSetting, UserHandle user, int scanFlags, boolean chatty)</li>
+<li>调用mRefs.incWeak()</li>
+<li>mStrong值加1，并获取mStrong的老值, 如果mStrong的老值不是1 &lt;&lt; 28则结束</li>
+<li>将mStrong值置为1， 并调用onFirstRef</li>
 </ul>
-<p>其由scanPackageLI调用, 最终的调用来源: </p>
+<p>从初始状态(No.1) 调用incStrong后变成状态(No.2)</p>
+<h3 id="decStrong"><a href="#decStrong" class="headerlink" title="decStrong"></a>decStrong</h3><p>强引用计数-1时, 弱引用计数-1， 弱此时是强引用计数模式, 且强引用计数为0, 回收该对象</p>
 <ul>
-<li>installNewPackageLIF: 安装一个不存在的安装包</li>
-<li>replaceNonSystemPackageLIF:</li>
-<li>replaceSystemPackageLIF:</li>
-<li>scanDirLI:</li>
-<li>PackageManagerService的构造函数</li>
-<li>decompressSystemApplications</li>
-<li>setEnableSetting</li>
-<li>loadMediaPackages</li>
-<li>loadPrivatePackagesInner</li>
-<li>installPackageFromSystemLIF</li>
+<li>mStrong值减1， 并获取老值</li>
+<li>若老值为1, 调用onLastStringRef,  如果flags 包含了OBJECT_LIFETIME_STRONG时， delete this.</li>
+<li>调用mRefs.decWeak()</li>
 </ul>
-<h2 id="PackageHandler"><a href="#PackageHandler" class="headerlink" title="PackageHandler"></a>PackageHandler</h2><p>PackageManagerService中有一个消息循环, PackageHandler是其Handler。 这个线程用于bind service， 并与该Service通信. 该Service是”com.android.defcontainer.DefaultContainerService”, 使用这个单独Service的目的是为了防止在COPY和检查apk文件时， 对应的文件所在磁盘被移除， 而进程被内核kill的情况, 防止系统进程收到影响. </p>
+<p>从状态No.2 &#x2013;&gt; No.1</p>
+<h3 id="attemptIncStrong-weakref-type"><a href="#attemptIncStrong-weakref-type" class="headerlink" title="attemptIncStrong(weakref_type)"></a>attemptIncStrong(weakref_type)</h3><p>首先弱引用计数加1, 尝试强引用计数+1， 如果此时是弱引用计数模式, 会调用onIncStrongAttempted来请示是否允许强引用加1</p>
 <ul>
-<li>第一步: 下发INIT_COPY指令， 用于检测Service绑定状态, 并记录安装信息</li>
-<li>第二步: Service绑定后, 下发MSC_BOUND绑定成功消息, 从记录的需要安装的信息中取出第一个开始处理copy</li>
-<li>第三步: service.getMinimalPackageInfo, 然后校验各种信息</li>
-<li>第四步: 调用InstallArg.copyApk开始copy(最终调用service.copyPackage这个方法)</li>
+<li>调用incWeak</li>
+<li>获取mStrong值, 如果存在有效mStrong, 加1, 结束</li>
+<li>如果flags为Strong时， mStrong加1， 如果不是Strong， 则进行尝试自救onIncStrongAttempted</li>
 </ul>
-<p>其中第三步与第四步之间可能会存在异步的校验， 待校验完成后会通过PackageHandler抛出PACKAGE_VERIFIED, CHECK_PENDING_VERIFICATION这两个消息(各大厂商提示安装包非官方包应该是通过这里做的), 支持复制步骤完成. </p>
+<p>调用此函数之前， case为No.3, 调用之后, case为No.4</p>
+<h3 id="mRefs-incWeak"><a href="#mRefs-incWeak" class="headerlink" title="mRefs.incWeak"></a>mRefs.incWeak</h3><p>mWeak值加1， 从原始状态(No.1)调用incWeak后变成状态(No.3)</p>
+<h3 id="mRefs-decWeak"><a href="#mRefs-decWeak" class="headerlink" title="mRefs.decWeak"></a>mRefs.decWeak</h3><ul>
+<li>mWeak值减1， 如果mWeak不为0则返回</li>
+<li>如果flags包含OBJECT_LIFETIME_STRONG: delete mRefs引用(这里需要结合RefBase的析构函数)</li>
+<li>如果flags不包含OBJECT_LIFETIME_STRONG: 调用onLastWeakRef, delete RefBase</li>
+</ul>
+<h1 id="sp与wp"><a href="#sp与wp" class="headerlink" title="sp与wp"></a>sp与wp</h1><h3 id="强引用sp"><a href="#强引用sp" class="headerlink" title="强引用sp"></a>强引用sp</h3><p>核心属性: m_ptr: RefBase的对象指针</p>
 <ul>
-<li>第五步: processPendingInstall，</li>
-<li>第六步: 调用installPackageTracedLI, 这里就与commitPackageSettings连接上了</li>
+<li>构造时调用RefBase的incStrong</li>
+<li>析构时调用RefBase的decStrong</li>
 </ul>
-<h2 id="Installer与Installd"><a href="#Installer与Installd" class="headerlink" title="Installer与Installd"></a>Installer与Installd</h2><p>Installer是一个系统服务, 集成自SystemService, 是一个Java层的包装, 通过Binder与native服务”installd”进行通信服务， 可以理解为Installd的一层壳. </p>
-<p>提供能力如下:<br>createAppData, migrateAppData, clearAppData, destroyAppData等操作AppData的能力, 获取AppSize, dexopt, 操控profile等能力. </p>
-<p>其真实实现为InstalldNativeService.cpp(framewors/native/cmds/installd/InstalldNativeService.cpp)</p>
+<p>于此同理wp实现类似， 均将实现代理给了RefBase中</p>
+<h3 id="由弱生强-promote"><a href="#由弱生强-promote" class="headerlink" title="由弱生强 promote():"></a>由弱生强 promote():</h3><p>直接调用m_refs的attemptIncStrong:</p>
+<h3 id="生死魔咒-extendsObjectLifetime-int32-t"><a href="#生死魔咒-extendsObjectLifetime-int32-t" class="headerlink" title="生死魔咒 extendsObjectLifetime(int32_t)"></a>生死魔咒 extendsObjectLifetime(int32_t)</h3><p>这里进行设置flags属性罢了</p>
 
       
     </div>
@@ -366,7 +435,7 @@
           
             <a href="/tags/android/" rel="tag"># android</a>
           
-            <a href="/tags/pm/" rel="tag"># pm</a>
+            <a href="/tags/refbase/" rel="tag"># refbase</a>
           
         </div>
       
@@ -379,8 +448,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/10/18/android-service-am/" rel="next" title="android-service-am">
-                <i class="fa fa-chevron-left"></i> android-service-am
+              <a href="/2019/10/25/android-service-pm/" rel="next" title="android service 之pm">
+                <i class="fa fa-chevron-left"></i> android service 之pm
               </a>
             
           </div>
@@ -388,10 +457,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/10/26/android-refbase-sp-wp/" rel="prev" title="Android RefBase类与强弱引用sp,wp">
-                Android RefBase类与强弱引用sp,wp <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -516,7 +581,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#源码粗略"><span class="nav-number">1.</span> <span class="nav-text">源码粗略</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#mPackages的写入-commitPackageSettings"><span class="nav-number">1.1.</span> <span class="nav-text">mPackages的写入(commitPackageSettings)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PackageHandler"><span class="nav-number">1.2.</span> <span class="nav-text">PackageHandler</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Installer与Installd"><span class="nav-number">1.3.</span> <span class="nav-text">Installer与Installd</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#数据结构"><span class="nav-number">1.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#算法"><span class="nav-number">2.</span> <span class="nav-text">算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#incStrong"><span class="nav-number">2.0.1.</span> <span class="nav-text">incStrong</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#decStrong"><span class="nav-number">2.0.2.</span> <span class="nav-text">decStrong</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#attemptIncStrong-weakref-type"><span class="nav-number">2.0.3.</span> <span class="nav-text">attemptIncStrong(weakref_type)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mRefs-incWeak"><span class="nav-number">2.0.4.</span> <span class="nav-text">mRefs.incWeak</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mRefs-decWeak"><span class="nav-number">2.0.5.</span> <span class="nav-text">mRefs.decWeak</span></a></li></ol></li></ol><li class="nav-item nav-level-1"><a class="nav-link" href="#sp与wp"><span class="nav-number">3.</span> <span class="nav-text">sp与wp</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#强引用sp"><span class="nav-number">3.0.1.</span> <span class="nav-text">强引用sp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#由弱生强-promote"><span class="nav-number">3.0.2.</span> <span class="nav-text">由弱生强 promote():</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#生死魔咒-extendsObjectLifetime-int32-t"><span class="nav-number">3.0.3.</span> <span class="nav-text">生死魔咒 extendsObjectLifetime(int32_t)</span></a></li></ol></li></div>
             
 
           </div>
