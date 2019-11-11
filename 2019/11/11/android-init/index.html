@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="android,init,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="init程序是第一个执行的用户空间程序, 从而启动了整个Android世界. 同时init也是整个Android的”父进程”, 监控管理这个所有的进程.">
+<meta name="keywords" content="android,init">
+<meta property="og:type" content="article">
+<meta property="og:title" content="android init源码阅读">
+<meta property="og:url" content="http://yoursite.com/2019/11/11/android-init/index.html">
+<meta property="og:site_name" content="ldkxingzhe&#39;s blog">
+<meta property="og:description" content="init程序是第一个执行的用户空间程序, 从而启动了整个Android世界. 同时init也是整个Android的”父进程”, 监控管理这个所有的进程.">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-11T10:12:55.145Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="android init源码阅读">
+<meta name="twitter:description" content="init程序是第一个执行的用户空间程序, 从而启动了整个Android世界. 同时init也是整个Android的”父进程”, 监控管理这个所有的进程.">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/11/11/android-init/">
+
+
+
+
+
+  <title>android init源码阅读 | ldkxingzhe's blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">ldkxingzhe's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/11/android-init/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ldkxingzhe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ldkxingzhe's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">android init源码阅读</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-11-11T18:06:17+08:00">
+                2019-11-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>init程序是第一个执行的用户空间程序, 从而启动了整个Android世界. 同时init也是整个Android的”父进程”, 监控管理这个所有的进程. </p>
+<a id="more"></a>
+
+<h1 id="流程简述"><a href="#流程简述" class="headerlink" title="流程简述"></a>流程简述</h1><p>源码入口位于system/core/init, Android.bp中定义了程序名字为”init_defaults”。<br>    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>** argv)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 启动模式可以选择eventd和watchdogd模式</span></span><br><span class="line">	<span class="keyword">if</span> (!<span class="built_in">strcmp</span>(basename(argv[<span class="number">0</span>]), <span class="string">"ueventd"</span>)) &#123;</span><br><span class="line">		<span class="keyword">return</span> ueventd_main(argc, argv);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!<span class="built_in">strcmp</span>(basename(argv[<span class="number">0</span>]), <span class="string">"watchdogd"</span>)) &#123;</span><br><span class="line">		<span class="keyword">return</span> watchdogd_main(argc, argv);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (REBOOT_BOOTLOADER_ON_PANIC) &#123;</span><br><span class="line">		InstallRebootSignalHandlers();</span><br><span class="line">	&#125;</span><br><span class="line">	add_environment(<span class="string">"PATH"</span>, _PATH_DEFPATH);</span><br><span class="line">	<span class="comment">// xxxx</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="first-stage-第一阶段"><a href="#first-stage-第一阶段" class="headerlink" title="first stage (第一阶段)"></a>first stage (第一阶段)</h2><ul>
+<li>首先进行mount</li>
+<li>初始化内核日志模块</li>
+<li>初始化SeLinux</li>
+<li>设置环境变量 INIT_SECOND_STAGE 为 true</li>
+<li>execv重新执行 init程序， 进入第二阶段</li>
+</ul>
+<h2 id="second-stage-第二阶段"><a href="#second-stage-第二阶段" class="headerlink" title="second stage (第二阶段)"></a>second stage (第二阶段)</h2><ul>
+<li>重新初始化内核日志模块</li>
+<li>初始化属性服务器 property_init(), 稍后启动</li>
+<li>初始化信号值 signal_handler_init()</li>
+<li>初始化ActionManager, ServiceManager(不要跟Binder的ServiceManager弄混了， 不是一个)</li>
+<li>构造Parser开始解析”ro.boot.init_rc”脚本</li>
+<li>am触发early-init事件, 添加内置Action, 触发init事件，触发late-init事件</li>
+<li>无限循环判断ServerManager是否需要执行, 闲时epoll等待</li>
+</ul>
+<h1 id="属性服务器-property-service"><a href="#属性服务器-property-service" class="headerlink" title="属性服务器(property_service)"></a>属性服务器(property_service)</h1><pre><code><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">start_property_service</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	property_set(<span class="string">"ro.property_service.version"</span>, <span class="string">"2"</span>);</span><br><span class="line"></span><br><span class="line">	property_set_fd = CreateSocket(PROP_SERVICE_NAME, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK,</span><br><span class="line">								   <span class="literal">false</span>, <span class="number">0666</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="literal">nullptr</span>, sehandle);</span><br><span class="line">	<span class="keyword">if</span> (property_set_fd == <span class="number">-1</span>) &#123;</span><br><span class="line">		PLOG(ERROR) &lt;&lt; <span class="string">"start_property_service socket creation failed"</span>;</span><br><span class="line">		<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	listen(property_set_fd, <span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">	register_epoll_handler(property_set_fd, handle_property_set_fd);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></code></pre><p>创建了一个UNIX socket, 用于更新properties. 当属性被设置后: </p>
+<pre><code><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// init.cpp</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">property_changed</span><span class="params">(<span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span>&amp; name, <span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span>&amp; value)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (name == <span class="string">"sys.powerctl"</span>) &#123;</span><br><span class="line">		shutdown_command = value;</span><br><span class="line">		do_shutdown = <span class="literal">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (property_triggers_enabled) ActionManager::GetInstance().QueuePropertyChange(name, value);</span><br><span class="line">	<span class="keyword">if</span> (waiting_for_prop) &#123;</span><br><span class="line">		<span class="keyword">if</span> (wait_prop_name == name &amp;&amp; wait_prop_value == value) &#123;</span><br><span class="line">			LOG(INFO) &lt;&lt; <span class="string">"Wait for property took "</span> &lt;&lt; *waiting_for_prop;</span><br><span class="line">			ResetWaitForProp();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></code></pre><p>QueuePropertyChange代表消息进入队列, 后续将分配给对应的Action执行。 具体的参见下文(实际上就是一个触发器(trigger)). </p>
+<h1 id="init-rc语法"><a href="#init-rc语法" class="headerlink" title="init.rc语法"></a>init.rc语法</h1><p>init.rc的语法文档就是init程序的README.md文档。 有五大命令: Actions, Commands, Services, Options, Improts. 其中Actions与Services同时隐性的声明了一个Section. </p>
+<p>Actions是一系列命令的名字, Actions有一个触发器(trigger), 用于指定这个Action什么时候被执行. </p>
+<pre><code><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">on &lt;trigger&gt; [&amp;&amp; &lt;trigger&gt;]*</span><br><span class="line">   &lt;<span class="built_in">command</span>&gt;</span><br><span class="line">   &lt;<span class="built_in">command</span>&gt;</span><br><span class="line">   &lt;<span class="built_in">command</span>&gt;</span><br></pre></td></tr></table></figure></code></pre><p>Services是一个由init启动或者重启的程序，如下:<br>    <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">service &lt;name&gt; &lt;pathname&gt; [ &lt;argument&gt; ]*</span><br><span class="line">   &lt;option&gt;</span><br><span class="line">   &lt;option&gt;</span><br><span class="line">   ...</span><br></pre></td></tr></table></figure></p>
+<p>options一项包含如下: </p>
+<ul>
+<li>console [<console>]: 这个服务需要一个console</console></li>
+<li>critical: 至关重要的服务, 如果四分钟内重启超过四次，重启进入recovery模式.</li>
+<li>disabled: 需要手动启动， 不会自动启动</li>
+<li>setenv <name> <value>: 设置启动服务器时的环境变量</value></name></li>
+<li>socket <name> <type> <perm> [ <user> [<group> [seclabel]]] 创建一个unix socket并传给启动进程</group></user></perm></type></name></li>
+<li>file <path> <type> 打开一个文件</type></path></li>
+<li>user <username> 执行这个服务前， 首先切换到这个用户</username></li>
+<li>oneshot: 不要重启</li>
+<li>class:</li>
+<li>onrestart: 重启时执行的命令</li>
+<li>writepid: 将pid写到文件中</li>
+</ul>
+<p>Imports <path> 用于解析一个配置文件</path></p>
+<h1 id="init-rc的解析与执行"><a href="#init-rc的解析与执行" class="headerlink" title="init.rc的解析与执行"></a>init.rc的解析与执行</h1><p>解析语法相关的代码位于/system/core/init/init_parser.h的Parser, 首先将init.rc分成多个Section, 对应的SectionParser进行解析, 对应关系如下: </p>
+<ul>
+<li>service: ServiceParser</li>
+<li>on: ActionParser</li>
+<li>import: ImportParser(略)</li>
+</ul>
+<p>先看一下Parser是如何解析的. </p>
+<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line">// system/core/init/init_parser.cpp</span><br><span class="line">void Parser::ParseData(const std::string&amp; filename, const std::string&amp; data) &#123;</span><br><span class="line">	//TODO: Use a parser with const input and remove this copy</span><br><span class="line">	std::vector&lt;char&gt; data_copy(data.begin(), data.end());</span><br><span class="line">	data_copy.push_back(&apos;\0&apos;);</span><br><span class="line"></span><br><span class="line">	parse_state state;</span><br><span class="line">	state.line = 0;</span><br><span class="line">	state.ptr = &amp;data_copy[0];</span><br><span class="line">	state.nexttoken = 0;</span><br><span class="line"></span><br><span class="line">	SectionParser* section_parser = nullptr;</span><br><span class="line">	std::vector&lt;std::string&gt; args;</span><br><span class="line"></span><br><span class="line">	for (;;) &#123;</span><br><span class="line">		// next_token位于parser.cpp文件中, 可以简单理解成解析单词，EOF结尾, 换行. 自动排除注释(没啥特别的)</span><br><span class="line">		switch (next_token(&amp;state)) &#123;</span><br><span class="line">		case T_EOF:</span><br><span class="line">			if (section_parser) &#123;</span><br><span class="line">				section_parser-&gt;EndSection();</span><br><span class="line">			&#125;</span><br><span class="line">			return;</span><br><span class="line">		case T_NEWLINE:</span><br><span class="line">			state.line++;</span><br><span class="line">			if (args.empty()) &#123;</span><br><span class="line">				break;</span><br><span class="line">			&#125;</span><br><span class="line">			// If we have a line matching a prefix we recognize, call its callback and unset any</span><br><span class="line">			// current section parsers.  This is meant for /sys/ and /dev/ line entries for uevent.</span><br><span class="line">			// 这个line_callbacks只在uevent中使用了, 正常流程可以忽略它</span><br><span class="line">			for (const auto&amp; [prefix, callback] : line_callbacks_) &#123;</span><br><span class="line">				if (android::base::StartsWith(args[0], prefix.c_str())) &#123;</span><br><span class="line">					if (section_parser) section_parser-&gt;EndSection();</span><br><span class="line"></span><br><span class="line">					std::string ret_err;</span><br><span class="line">					if (!callback(std::move(args), &amp;ret_err)) &#123;</span><br><span class="line">						LOG(ERROR) &lt;&lt; filename &lt;&lt; &quot;: &quot; &lt;&lt; state.line &lt;&lt; &quot;: &quot; &lt;&lt; ret_err;</span><br><span class="line">					&#125;</span><br><span class="line">					section_parser = nullptr;</span><br><span class="line">					break;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			if (section_parsers_.count(args[0])) &#123;</span><br><span class="line">				if (section_parser) &#123;</span><br><span class="line">					section_parser-&gt;EndSection();</span><br><span class="line">				&#125;</span><br><span class="line">				section_parser = section_parsers_[args[0]].get();</span><br><span class="line">				std::string ret_err;</span><br><span class="line">				// 就此由SectionParser接手解析</span><br><span class="line">				if (!section_parser-&gt;ParseSection(std::move(args), filename, state.line, &amp;ret_err)) &#123;</span><br><span class="line">					LOG(ERROR) &lt;&lt; filename &lt;&lt; &quot;: &quot; &lt;&lt; state.line &lt;&lt; &quot;: &quot; &lt;&lt; ret_err;</span><br><span class="line">					section_parser = nullptr;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125; else if (section_parser) &#123;</span><br><span class="line">				std::string ret_err;</span><br><span class="line">				if (!section_parser-&gt;ParseLineSection(std::move(args), state.line, &amp;ret_err)) &#123;</span><br><span class="line">					LOG(ERROR) &lt;&lt; filename &lt;&lt; &quot;: &quot; &lt;&lt; state.line &lt;&lt; &quot;: &quot; &lt;&lt; ret_err;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			args.clear();</span><br><span class="line">			break;</span><br><span class="line">		case T_TEXT:</span><br><span class="line">			args.emplace_back(state.text);</span><br><span class="line">			break;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></code></pre><p>ActionParser如何ParseSection, 由ActionParse::InitTriggers实现:<br>    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> Action::InitTriggers(<span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;<span class="built_in">std</span>::<span class="built_in">string</span>&gt;&amp; args, <span class="built_in">std</span>::<span class="built_in">string</span>* err) &#123;</span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">static</span> <span class="built_in">std</span>::<span class="function"><span class="built_in">string</span> <span class="title">prop_str</span><span class="params">(<span class="string">"property:"</span>)</span></span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="built_in">std</span>::<span class="keyword">size_t</span> i = <span class="number">0</span>; i &lt; args.size(); ++i) &#123;</span><br><span class="line">		<span class="keyword">if</span> (args[i].empty()) &#123;</span><br><span class="line">			*err = <span class="string">"empty trigger is not valid"</span>;</span><br><span class="line">			<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (i % <span class="number">2</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span> (args[i] != <span class="string">"&amp;&amp;"</span>) &#123;</span><br><span class="line">				*err = <span class="string">"&amp;&amp; is the only symbol allowed to concatenate actions"</span>;</span><br><span class="line">				<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (!args[i].compare(<span class="number">0</span>, prop_str.length(), prop_str)) &#123;</span><br><span class="line">			<span class="keyword">if</span> (!ParsePropertyTrigger(args[i], err)) &#123;</span><br><span class="line">				<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="keyword">if</span> (!event_trigger_.empty()) &#123;</span><br><span class="line">				*err = <span class="string">"multiple event triggers are not allowed"</span>;</span><br><span class="line">				<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// 这里记录这个Action的触发器名字, 比如on boot 中boot.</span></span><br><span class="line">			event_trigger_ = args[i];</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在ParsePropertyTrigger中, 将对应关系记录在Action的property_triggers_(是一个Map, key是属性名, value是其值)中.</p>
+<p>ServiceParser如何ParseSection: 直接构造了一个Service对象而已, 然后PaseLine函数代理给了OptionParserMap这个类，设置Service的各种属性. </p>
+<p>init.rc有很多内置方法, 定义在system/core/init/builtins.cpp中, 包括mount, chmod, chown, copy, enable&#x2026;. 当成个自定义bash理解就可以. </p>
+<h1 id="init-rc具体内容分析"><a href="#init-rc具体内容分析" class="headerlink" title="init.rc具体内容分析"></a>init.rc具体内容分析</h1><p>init.rc地址位于 system/core/rootdir/init.rc文件中. 内容还是比较多的， 大部分都在创建文件夹， 修改权限, 更改内核参数. 截取一些比较有意思的内容: </p>
+<pre><code><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">// 定义了Zygote Service</span><br><span class="line">import /init.<span class="variable">$&#123;ro.zygote&#125;</span>.rc</span><br><span class="line"></span><br><span class="line">on init</span><br><span class="line">	<span class="comment"># stune我也不知道具体是干什么的, 跟cpu调用配置有关。后看</span></span><br><span class="line">	mkdir /dev/stune</span><br><span class="line">	mount cgroup none /dev/stune schedtune</span><br><span class="line">	mkdir /dev/stune/foreground</span><br><span class="line">	mkdir /dev/stune/background</span><br><span class="line">	mkdir /dev/stune/top-app</span><br><span class="line">	mkdir /dev/stune/rt</span><br><span class="line"></span><br><span class="line">	chmod 0664 /dev/stune/tasks</span><br><span class="line">	chmod 0664 /dev/stune/foreground/tasks</span><br><span class="line">	chmod 0664 /dev/stune/background/tasks</span><br><span class="line">	chmod 0664 /dev/stune/top-app/tasks</span><br><span class="line">	chmod 0664 /dev/stune/rt/tasks</span><br></pre></td></tr></table></figure></code></pre><p>其中 init.zygote64.rc如下:<br>    <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-system-server</span><br><span class="line">	class main</span><br><span class="line">	priority -20</span><br><span class="line">	user root</span><br><span class="line">	group root readproc</span><br><span class="line">	<span class="comment"># 启动了一个zygote的unitx socket</span></span><br><span class="line">	socket zygote stream 660 root system</span><br><span class="line">	onrestart write /sys/android_power/request_state wake</span><br><span class="line">	onrestart write /sys/power/state on</span><br><span class="line">	onrestart restart audioserver</span><br><span class="line">	onrestart restart cameraserver</span><br><span class="line">	onrestart restart media</span><br><span class="line">	onrestart restart netd</span><br><span class="line">	onrestart restart wificond</span><br><span class="line">	writepid /dev/cpuset/foreground/tasks</span><br></pre></td></tr></table></figure></p>
+<p>zygote的实现为java, 为frameworks/base/core/java/com/android/internal/os/Zygote.java, 具体分析见下篇博客. </p>
+<p>init.rc中包含了几个action, early-init, init, late-init这几个动作由init程序自身触发， 其他action比如 post-fs由init.rc tigger 指令触发. </p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/android/" rel="tag"># android</a>
+          
+            <a href="/tags/init/" rel="tag"># init</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/11/04/android-input-system/" rel="next" title="android 输入系统概述">
+                <i class="fa fa-chevron-left"></i> android 输入系统概述
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="ldkxingzhe">
+            
+              <p class="site-author-name" itemprop="name">ldkxingzhe</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#流程简述"><span class="nav-number">1.</span> <span class="nav-text">流程简述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#first-stage-第一阶段"><span class="nav-number">1.1.</span> <span class="nav-text">first stage (第一阶段)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#second-stage-第二阶段"><span class="nav-number">1.2.</span> <span class="nav-text">second stage (第二阶段)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#属性服务器-property-service"><span class="nav-number">2.</span> <span class="nav-text">属性服务器(property_service)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#init-rc语法"><span class="nav-number">3.</span> <span class="nav-text">init.rc语法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#init-rc的解析与执行"><span class="nav-number">4.</span> <span class="nav-text">init.rc的解析与执行</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#init-rc具体内容分析"><span class="nav-number">5.</span> <span class="nav-text">init.rc具体内容分析</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ldkxingzhe</span>
+</div>
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

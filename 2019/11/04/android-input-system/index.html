@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="android, input,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="学习下Android的Input系统，哪些View可以显示输入法, 可以对输入法做哪些控制.">
+<meta name="keywords" content="android, input">
+<meta property="og:type" content="article">
+<meta property="og:title" content="android 输入系统概述">
+<meta property="og:url" content="http://yoursite.com/2019/11/04/android-input-system/index.html">
+<meta property="og:site_name" content="ldkxingzhe&#39;s blog">
+<meta property="og:description" content="学习下Android的Input系统，哪些View可以显示输入法, 可以对输入法做哪些控制.">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/IMS_startInputLocked.png">
+<meta property="og:updated_time" content="2019-11-04T09:39:30.022Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="android 输入系统概述">
+<meta name="twitter:description" content="学习下Android的Input系统，哪些View可以显示输入法, 可以对输入法做哪些控制.">
+<meta name="twitter:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/IMS_startInputLocked.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/11/04/android-input-system/">
+
+
+
+
+
+  <title>android 输入系统概述 | ldkxingzhe's blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">ldkxingzhe's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/04/android-input-system/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ldkxingzhe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ldkxingzhe's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">android 输入系统概述</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-11-04T17:22:38+08:00">
+                2019-11-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>学习下Android的Input系统，哪些View可以显示输入法, 可以对输入法做哪些控制. </p>
+<a id="more"></a>
+
+<h1 id="EditText-x2013-View如何配置可以显示输入框"><a href="#EditText-x2013-View如何配置可以显示输入框" class="headerlink" title="EditText &#x2013; View如何配置可以显示输入框"></a>EditText &#x2013; View如何配置可以显示输入框</h1><p>Android的输入框控件是EditText, TextView是其父类, 一般情况下EditText可以被编辑, 而TextView不可以. 其区别在于方法getDefaultEditable的返回值, 在TextView的构造函数中发现getDefaultEditable用于控制是否创建mEditor对象, 然后两者就没有区别了.<br>    <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">createEditorIfNeeded</span><span class="params">()</span></span>&#123;</span><br><span class="line">	<span class="keyword">if</span>(mEditor == <span class="keyword">null</span>)&#123;</span><br><span class="line">		mEditor = <span class="keyword">new</span> Editor(<span class="keyword">this</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 用于校验View是否是一个文本输入框, true ---&gt; 在这个View上显示一个软键盘输入框</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">onCheckIsTextEditor</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> mEditor != <span class="keyword">null</span> &amp;&amp; mEditor.mInputType != EditorInfo.TYPE_NULL;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>由此可以发现onCreateInputConnection方法， 用于创建一个与输入法交互的通道InputConnection. </p>
+<h1 id="InputMethodManager-x2013-如何判定哪个View用于显示输入法"><a href="#InputMethodManager-x2013-如何判定哪个View用于显示输入法" class="headerlink" title="InputMethodManager &#x2013; 如何判定哪个View用于显示输入法"></a>InputMethodManager &#x2013; 如何判定哪个View用于显示输入法</h1><p>同样是电影的CS架构, InputMethodManager是一个单例模式, 运行在每个Client进程中, 与输入法IME的Service进程 进行通信。对应的远端Service是InputManagerService, 任意一个时间点仅支持一个InputConnection与IME有效通信。</p>
+<p>InputMethodManager显示触发与View的focus有关, View通过onWindowFocusChanged, onFocusChanged, dispatchFinishTemporaryDetach, onAttachedToWindow回调触发InputMethodManager的focusIn方法. 然后scheduleCheckFocusLocked. </p>
+<ul>
+<li>scheduleCheckFocusLocked</li>
+<li>ViewRootImpl.dispatchCheckFocus</li>
+<li>延迟调用InputMethodManager的checkFocus方法</li>
+<li>调用startInputInner方法显示键盘<ul>
+<li>调用View.onCreateInputConnection创建InputConnection</li>
+<li>调用service的startInputOrWindowGainedFocus</li>
+</ul>
+</li>
+</ul>
+<p>另外InputMethodManager的onPostWindowFocus也可以调用focusInLocked方法, ViewGroup用于发现Focus的View的方式是View.findFocus. </p>
+<h1 id="InputMethodManagerService-x2013-输入法显示过程"><a href="#InputMethodManagerService-x2013-输入法显示过程" class="headerlink" title="InputMethodManagerService &#x2013; 输入法显示过程"></a>InputMethodManagerService &#x2013; 输入法显示过程</h1><p>InputMethodManagerService(一个标准的系统服务)是系统用来管理多个Input Methods的地方。 维持了一个mMethodList与mMethodMap用于记录各个输入法的信息。</p>
+<p>输入法信息的读取是由InputMethodManagerService的buildInputMethodListLocked, 通过PackageManagerService服务查询action为”android.view.InputMethod”的所有服务, 并过滤掉没有android.permission.BIND_INPUT_METHOD权限的部分. buildInputMethodListLocked由一下位置调用: </p>
+<ul>
+<li>onActionLocaleChanged: 时区改变</li>
+<li>onUnlockUser: 用户Unlock</li>
+<li>switchUserLocked: 用户切换</li>
+<li>setAdditionalInputMethodSubtypes</li>
+<li>systemRunning: 系统启动阶段</li>
+<li>onFinishPackageChanges: 安装包更新后</li>
+</ul>
+<p>一般而言最常遇到的情况只有系统启动过程中, 和安装包更新后这两种情况, 符合咱们的猜测. </p>
+<p>HashMap mClients记录每个InputMethodManager(即客户端)的代理对象, 其更改由addClient与removeClient两个函数触发。 就添加而言: </p>
+<ul>
+<li>WindowManagerGlobal.getWindowSession会调用WindowManager.openSession 其参数client由InputMethodManager这个单例对象获取</li>
+<li>WindowManagerService的openSession会初始化一个Session, 构造时会调用InputMethodManagerService.addClient添加新的Client对象</li>
+</ul>
+<p>可以看到这里牵扯到了WindowManagerService的session, 不在本文中做过多介绍. </p>
+<h2 id="startInputOrWindowGainedFocus"><a href="#startInputOrWindowGainedFocus" class="headerlink" title="startInputOrWindowGainedFocus"></a>startInputOrWindowGainedFocus</h2><p>分成两个函数: windowGainedFocus和startInput。 windowGainedFocus比startInput多的一步就是根据Window的flag判断计算动作。 </p>
+<p>最后都会调用startInputUncheckedLocked进行显示处理, 流程如下图:<br><img src="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/IMS_startInputLocked.png" alt="img"></p>
+<p>总计一句话就是, 与旧InputMethodService解除绑定, WM中删除对应的View, 与新InputMethodServie绑定， WM添加新的View。</p>
+<h2 id="InputBindResult-startInputOrWindowGainedFocus的返回值"><a href="#InputBindResult-startInputOrWindowGainedFocus的返回值" class="headerlink" title="InputBindResult: startInputOrWindowGainedFocus的返回值"></a>InputBindResult: startInputOrWindowGainedFocus的返回值</h2><p>由于是一个Parcelable的返回值， 其内包装了以下信息: </p>
+<ul>
+<li>IInputMethodSession method: 对应的InputMethodService接口</li>
+<li>InputChannel channel: 一个发送消息的通道</li>
+<li>String id:</li>
+<li>int sequence:</li>
+<li>int userActionNotificationSequenceNumber:</li>
+</ul>
+<p>method这个IInputMethodSession由InputMethodManagerService.onSessionCreated触发构造, 实际上是由对应的InputMethodService触发的, 用于标记这三者统一状态的一个会话对象. </p>
+<p>channel: 一个发送消息的通道, 其构造触发之处是InputMethodManagerService.requestClientSessionLocked:<br>    <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">requestClientSessionLocked</span><span class="params">(ClientState cs)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (!cs.sessionRequested) &#123;</span><br><span class="line">		<span class="keyword">if</span> (DEBUG) Slog.v(TAG, <span class="string">"Creating new session for client "</span> + cs);</span><br><span class="line">		InputChannel[] channels = InputChannel.openInputChannelPair(cs.toString());</span><br><span class="line">		cs.sessionRequested = <span class="keyword">true</span>;</span><br><span class="line">		executeOrSendMessage(mCurMethod, mCaller.obtainMessageOOO(</span><br><span class="line">				MSG_CREATE_SESSION, mCurMethod, channels[<span class="number">1</span>],</span><br><span class="line">				<span class="keyword">new</span> MethodCallback(<span class="keyword">this</span>, mCurMethod, channels[<span class="number">0</span>])));</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>看着跟Unix的管道pipe有相似之处, 底层实现是一对UNIX socket, 代码位于frameworks/native/libs/input/InputTransport.cpp:</p>
+<pre><code><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> InputChannel::openInputChannelPair(<span class="keyword">const</span> String8&amp; name,</span><br><span class="line">		sp&lt;InputChannel&gt;&amp; outServerChannel, sp&lt;InputChannel&gt;&amp; outClientChannel) &#123;</span><br><span class="line">	<span class="keyword">int</span> sockets[<span class="number">2</span>];</span><br><span class="line">	<span class="keyword">if</span> (socketpair(AF_UNIX, SOCK_SEQPACKET, <span class="number">0</span>, sockets)) &#123;</span><br><span class="line">		<span class="keyword">status_t</span> result = -errno;</span><br><span class="line">		ALOGE(<span class="string">"channel '%s' ~ Could not create socket pair.  errno=%d"</span>,</span><br><span class="line">				name.<span class="built_in">string</span>(), errno);</span><br><span class="line">		outServerChannel.clear();</span><br><span class="line">		outClientChannel.clear();</span><br><span class="line">		<span class="keyword">return</span> result;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> bufferSize = SOCKET_BUFFER_SIZE;</span><br><span class="line">	setsockopt(sockets[<span class="number">0</span>], SOL_SOCKET, SO_SNDBUF, &amp;bufferSize, <span class="keyword">sizeof</span>(bufferSize));</span><br><span class="line">	setsockopt(sockets[<span class="number">0</span>], SOL_SOCKET, SO_RCVBUF, &amp;bufferSize, <span class="keyword">sizeof</span>(bufferSize));</span><br><span class="line">	setsockopt(sockets[<span class="number">1</span>], SOL_SOCKET, SO_SNDBUF, &amp;bufferSize, <span class="keyword">sizeof</span>(bufferSize));</span><br><span class="line">	setsockopt(sockets[<span class="number">1</span>], SOL_SOCKET, SO_RCVBUF, &amp;bufferSize, <span class="keyword">sizeof</span>(bufferSize));</span><br><span class="line"></span><br><span class="line">	String8 serverChannelName = name;</span><br><span class="line">	serverChannelName.append(<span class="string">" (server)"</span>);</span><br><span class="line">	outServerChannel = <span class="keyword">new</span> InputChannel(serverChannelName, sockets[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">	String8 clientChannelName = name;</span><br><span class="line">	clientChannelName.append(<span class="string">" (client)"</span>);</span><br><span class="line">	outClientChannel = <span class="keyword">new</span> InputChannel(clientChannelName, sockets[<span class="number">1</span>]);</span><br><span class="line">	<span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></code></pre><p>另外追踪Channel的使用, Channel的用途是客户端进程将InputEvent发送给输入法引擎, 作用上与IInputMethodSession有些许重叠(有返回值, 哈哈)</p>
+<h1 id="InputConnection通道与通信"><a href="#InputConnection通道与通信" class="headerlink" title="InputConnection通道与通信"></a>InputConnection通道与通信</h1><p>回到InputMethodManager所在进程(即UI所在进程), View.onCreateInputConnection后， 这个InputConnection到底做了哪些事情. 其作为参数构建一个ControlledInputConnectionWrapper作为输入输出的上下文, 同样这个上下文对象也通过startInputOrWindowGainedFocus方法传给了InputMethodManagerService进程, 并记录为mCurInputContext, 当然最后会传递给对应的InputMethodService。 </p>
+<p>InputConnection支持的动作由IInputContext.aidl定义: </p>
+<ul>
+<li>所有定义方法调用IInputConnectionWrapper方法都是异步的， 所以不会有返回值, 全是void</li>
+<li>会代理给InputConnection的相应方法</li>
+</ul>
+<p>所有InputConnection通信支持的协议内容可以参见InputConnection.java中的注释: </p>
+<ul>
+<li>getTextBeforeCursor(int n, int falgs): 获取当前光标前的文本内容</li>
+<li>getTextAfterCursor(int n, int flags): 获取当前光标后的文本</li>
+<li>getSelectedText(int flags): 获取选中的文本</li>
+<li>getCursorCapsMode(int reqModes): 获取当前光标位置的capitalization mode</li>
+<li>getExtractedText(ExtractedTextRequest request, int flags): 获取当前Editor中的内容， 并监听.</li>
+<li>deleteSurroundingText(int beforeLength, int afterLength): 删除光标前后的字符串</li>
+<li>setComposingText(CharSequence text, int newCursorPosition): 使用给定文本替换当前合成的文字, 并重设新的光标位置.</li>
+<li>setComposingRegion(int start, int end):</li>
+<li>finishComposingText():</li>
+<li>commitText(CharSequence text, int newCursorPosition):</li>
+<li>commitCompletion(CompletionInfo text):</li>
+<li>commitCorrection(CorrectionInfo correctionInfo):</li>
+<li>setSelection(int start, int end):</li>
+<li>performEditorAction(int editorAction)</li>
+<li>performContextMenuAction(int id)</li>
+<li>beginBatchEdit()</li>
+<li>endBatchEdit()</li>
+<li>sendKeyEvent(KeyEvent event)</li>
+<li>clearMetaKeyStates(int states)</li>
+<li>performPrivateCommand(String action, Bundle data)</li>
+<li>closeConnection()</li>
+<li>commitContent</li>
+</ul>
+<p>作为IME(InputMethod Engine)的开发者，要知道能调用哪些命令. 作为Editor开发者， 要知道需要处理哪些命令. </p>
+<h2 id="Editor"><a href="#Editor" class="headerlink" title="Editor"></a>Editor</h2><h1 id="CharSequence-Spanned等内部的文字表示"><a href="#CharSequence-Spanned等内部的文字表示" class="headerlink" title="CharSequence, Spanned等内部的文字表示"></a>CharSequence, Spanned等内部的文字表示</h1><p>CharSequence更加像一个chat字符合集, 这个是Java本身提供的. Android中新加了Spanned接口作为拓展。 Spanned赋予了某个区间的文字attach对象的能力. Spnnable继承自Spanned， 赋予了添加与删除Span的能力. 然后就是Editable接口. </p>
+<p>对于任意一个Span, MARK表示在字符前， POINT表示在字符后. 通过MARK_POINT flag 可以标价这个Span在其开头与结尾处插入字符时是否包含进入Span. (就是指定include, exclusive)</p>
+<p>另外一个特殊的Spaned : COMPOSIING, 表示此块SPAN由输入法引擎操作， 是个临时的span， 额， 只有一个. </p>
+<p>Spaned有很多实现， 能够利用span绘制出很多特效， 不在这篇文章中占用太多篇幅。 后续会提供一个skia draw的文章. </p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/android-input/" rel="tag"># android, input</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/10/26/android-refbase-sp-wp/" rel="next" title="Android RefBase类与强弱引用sp,wp">
+                <i class="fa fa-chevron-left"></i> Android RefBase类与强弱引用sp,wp
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/11/11/android-init/" rel="prev" title="android init源码阅读">
+                android init源码阅读 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="ldkxingzhe">
+            
+              <p class="site-author-name" itemprop="name">ldkxingzhe</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#EditText-x2013-View如何配置可以显示输入框"><span class="nav-number">1.</span> <span class="nav-text">EditText – View如何配置可以显示输入框</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#InputMethodManager-x2013-如何判定哪个View用于显示输入法"><span class="nav-number">2.</span> <span class="nav-text">InputMethodManager – 如何判定哪个View用于显示输入法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#InputMethodManagerService-x2013-输入法显示过程"><span class="nav-number">3.</span> <span class="nav-text">InputMethodManagerService – 输入法显示过程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#startInputOrWindowGainedFocus"><span class="nav-number">3.1.</span> <span class="nav-text">startInputOrWindowGainedFocus</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#InputBindResult-startInputOrWindowGainedFocus的返回值"><span class="nav-number">3.2.</span> <span class="nav-text">InputBindResult: startInputOrWindowGainedFocus的返回值</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#InputConnection通道与通信"><span class="nav-number">4.</span> <span class="nav-text">InputConnection通道与通信</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Editor"><span class="nav-number">4.1.</span> <span class="nav-text">Editor</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CharSequence-Spanned等内部的文字表示"><span class="nav-number">5.</span> <span class="nav-text">CharSequence, Spanned等内部的文字表示</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ldkxingzhe</span>
+</div>
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
