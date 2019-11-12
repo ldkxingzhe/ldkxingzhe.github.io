@@ -83,11 +83,11 @@
 <meta name="keywords" content="android,init">
 <meta property="og:type" content="article">
 <meta property="og:title" content="android init源码阅读">
-<meta property="og:url" content="http://yoursite.com/2019/11/11/android-init/index.html">
+<meta property="og:url" content="https://blog.ldkxingzhe.top/2019/11/11/android-init/index.html">
 <meta property="og:site_name" content="ldkxingzhe&#39;s blog">
 <meta property="og:description" content="init程序是第一个执行的用户空间程序, 从而启动了整个Android世界. 同时init也是整个Android的”父进程”, 监控管理这个所有的进程.">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-11-11T10:12:55.145Z">
+<meta property="og:updated_time" content="2019-11-12T03:02:24.898Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="android init源码阅读">
 <meta name="twitter:description" content="init程序是第一个执行的用户空间程序, 从而启动了整个Android世界. 同时init也是整个Android的”父进程”, 监控管理这个所有的进程.">
@@ -120,7 +120,7 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2019/11/11/android-init/">
+  <link rel="canonical" href="https://blog.ldkxingzhe.top/2019/11/11/android-init/">
 
 
 
@@ -243,7 +243,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/11/android-init/">
+    <link itemprop="mainEntityOfPage" href="https://blog.ldkxingzhe.top/2019/11/11/android-init/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="ldkxingzhe">
@@ -365,6 +365,21 @@
 <pre><code><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">// 定义了Zygote Service</span><br><span class="line">import /init.<span class="variable">$&#123;ro.zygote&#125;</span>.rc</span><br><span class="line"></span><br><span class="line">on init</span><br><span class="line">	<span class="comment"># stune我也不知道具体是干什么的, 跟cpu调用配置有关。后看</span></span><br><span class="line">	mkdir /dev/stune</span><br><span class="line">	mount cgroup none /dev/stune schedtune</span><br><span class="line">	mkdir /dev/stune/foreground</span><br><span class="line">	mkdir /dev/stune/background</span><br><span class="line">	mkdir /dev/stune/top-app</span><br><span class="line">	mkdir /dev/stune/rt</span><br><span class="line"></span><br><span class="line">	chmod 0664 /dev/stune/tasks</span><br><span class="line">	chmod 0664 /dev/stune/foreground/tasks</span><br><span class="line">	chmod 0664 /dev/stune/background/tasks</span><br><span class="line">	chmod 0664 /dev/stune/top-app/tasks</span><br><span class="line">	chmod 0664 /dev/stune/rt/tasks</span><br></pre></td></tr></table></figure></code></pre><p>其中 init.zygote64.rc如下:<br>    <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-system-server</span><br><span class="line">	class main</span><br><span class="line">	priority -20</span><br><span class="line">	user root</span><br><span class="line">	group root readproc</span><br><span class="line">	<span class="comment"># 启动了一个zygote的unitx socket</span></span><br><span class="line">	socket zygote stream 660 root system</span><br><span class="line">	onrestart write /sys/android_power/request_state wake</span><br><span class="line">	onrestart write /sys/power/state on</span><br><span class="line">	onrestart restart audioserver</span><br><span class="line">	onrestart restart cameraserver</span><br><span class="line">	onrestart restart media</span><br><span class="line">	onrestart restart netd</span><br><span class="line">	onrestart restart wificond</span><br><span class="line">	writepid /dev/cpuset/foreground/tasks</span><br></pre></td></tr></table></figure></p>
 <p>zygote的实现为java, 为frameworks/base/core/java/com/android/internal/os/Zygote.java, 具体分析见下篇博客. </p>
 <p>init.rc中包含了几个action, early-init, init, late-init这几个动作由init程序自身触发， 其他action比如 post-fs由init.rc tigger 指令触发. </p>
+<h1 id="native-service种类"><a href="#native-service种类" class="headerlink" title="native service种类"></a>native service种类</h1><p>具体有哪些native service并没有在源码的init.rc文件中直接编写，而是由各自的Android.mk通过编译生成的. 由mk构建工具的LOCAL_INIT_RC(Android.bp的 init_rc)属性指定. 例如logcatd.rc<br>    <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># logcatd service</span></span><br><span class="line">service logcatd /system/bin/logcatd -L -b <span class="variable">$&#123;logd.logpersistd.buffer:-all&#125;</span> -v threadtime -v usec -v printable -D -f /data/misc/logd/logcat -r 1024 -n <span class="variable">$&#123;logd.logpersistd.size:-256&#125;</span> --id=<span class="variable">$&#123;ro.build.id&#125;</span></span><br><span class="line">	class late_start</span><br><span class="line">	disabled</span><br><span class="line">	<span class="comment"># logd for write to /data/misc/logd, log group for read from log daemon</span></span><br><span class="line">	user logd</span><br><span class="line">	group <span class="built_in">log</span></span><br><span class="line">	writepid /dev/cpuset/system-background/tasks</span><br><span class="line">	oom_score_adjust -600</span><br></pre></td></tr></table></figure></p>
+<p>几个有趣的native service(通过grep全局搜出来的)</p>
+<ul>
+<li>service_manager.rc: service manager服务</li>
+<li>netd.rc: 网络服务(service netd)</li>
+<li>vold.rc: vold进程, 这个不是window中的void进程，而是Volume Daemon进程, 是用来管理控制Android平台的外部存储设备的</li>
+<li>logcatd.rc: logcat服务</li>
+<li>cameraserver.rc: 照相机camera服务</li>
+<li>mediaserver.rc: 多媒体服务</li>
+<li>audioserver.rc: 音频服务</li>
+<li>surfaceflinger.rc: 显示合成服务</li>
+<li>wifi-events.rc: wifi相关</li>
+<li>installd.rc: 用于安装apk文件的服务</li>
+<li>dumpstate.rc: 命令行中dump使用的服务</li>
+</ul>
 
       
     </div>
@@ -530,7 +545,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#流程简述"><span class="nav-number">1.</span> <span class="nav-text">流程简述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#first-stage-第一阶段"><span class="nav-number">1.1.</span> <span class="nav-text">first stage (第一阶段)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#second-stage-第二阶段"><span class="nav-number">1.2.</span> <span class="nav-text">second stage (第二阶段)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#属性服务器-property-service"><span class="nav-number">2.</span> <span class="nav-text">属性服务器(property_service)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#init-rc语法"><span class="nav-number">3.</span> <span class="nav-text">init.rc语法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#init-rc的解析与执行"><span class="nav-number">4.</span> <span class="nav-text">init.rc的解析与执行</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#init-rc具体内容分析"><span class="nav-number">5.</span> <span class="nav-text">init.rc具体内容分析</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#流程简述"><span class="nav-number">1.</span> <span class="nav-text">流程简述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#first-stage-第一阶段"><span class="nav-number">1.1.</span> <span class="nav-text">first stage (第一阶段)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#second-stage-第二阶段"><span class="nav-number">1.2.</span> <span class="nav-text">second stage (第二阶段)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#属性服务器-property-service"><span class="nav-number">2.</span> <span class="nav-text">属性服务器(property_service)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#init-rc语法"><span class="nav-number">3.</span> <span class="nav-text">init.rc语法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#init-rc的解析与执行"><span class="nav-number">4.</span> <span class="nav-text">init.rc的解析与执行</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#init-rc具体内容分析"><span class="nav-number">5.</span> <span class="nav-text">init.rc具体内容分析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#native-service种类"><span class="nav-number">6.</span> <span class="nav-text">native service种类</span></a></li></ol></div>
             
 
           </div>
