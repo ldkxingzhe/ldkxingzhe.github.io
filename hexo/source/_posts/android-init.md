@@ -298,3 +298,31 @@ zygote的实现为java, 为frameworks/base/core/java/com/android/internal/os/Zyg
 
 init.rc中包含了几个action, early-init, init, late-init这几个动作由init程序自身触发， 其他action比如 post-fs由init.rc tigger 指令触发. 
 
+# native service种类
+
+具体有哪些native service并没有在源码的init.rc文件中直接编写，而是由各自的Android.mk通过编译生成的. 由mk构建工具的LOCAL\_INIT\_RC(Android.bp的 init\_rc)属性指定. 例如logcatd.rc
+	```sh
+    # logcatd service
+    service logcatd /system/bin/logcatd -L -b ${logd.logpersistd.buffer:-all} -v threadtime -v usec -v printable -D -f /data/misc/logd/logcat -r 1024 -n ${logd.logpersistd.size:-256} --id=${ro.build.id}
+    	class late_start
+    	disabled
+    	# logd for write to /data/misc/logd, log group for read from log daemon
+    	user logd
+    	group log
+    	writepid /dev/cpuset/system-background/tasks
+    	oom_score_adjust -600
+	```
+
+几个有趣的native service(通过grep全局搜出来的)
+
+-   service\_manager.rc: service manager服务
+-   netd.rc: 网络服务(service netd)
+-   vold.rc: vold进程, 这个不是window中的void进程，而是Volume Daemon进程, 是用来管理控制Android平台的外部存储设备的
+-   logcatd.rc: logcat服务
+-   cameraserver.rc: 照相机camera服务
+-   mediaserver.rc: 多媒体服务
+-   audioserver.rc: 音频服务
+-   surfaceflinger.rc: 显示合成服务
+-   wifi-events.rc: wifi相关
+-   installd.rc: 用于安装apk文件的服务
+-   dumpstate.rc: 命令行中dump使用的服务
