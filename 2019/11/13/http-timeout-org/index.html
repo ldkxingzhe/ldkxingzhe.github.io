@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="android,java,socket,linux,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="遇到一个关于timeout的bug, 发现自己不能准确解释清楚readtimeout, writetimeout, connecttimeout具体表示的含义, 这里扒拉下源码研究下(Android平台)">
+<meta name="keywords" content="android,java,socket,linux">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Socket timeout时间代表的含义">
+<meta property="og:url" content="https://blog.ldkxingzhe.top/2019/11/13/http-timeout-org/index.html">
+<meta property="og:site_name" content="ldkxingzhe&#39;s blog">
+<meta property="og:description" content="遇到一个关于timeout的bug, 发现自己不能准确解释清楚readtimeout, writetimeout, connecttimeout具体表示的含义, 这里扒拉下源码研究下(Android平台)">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-13T10:36:51.416Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Socket timeout时间代表的含义">
+<meta name="twitter:description" content="遇到一个关于timeout的bug, 发现自己不能准确解释清楚readtimeout, writetimeout, connecttimeout具体表示的含义, 这里扒拉下源码研究下(Android平台)">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://blog.ldkxingzhe.top/2019/11/13/http-timeout-org/">
+
+
+
+
+
+  <title>Socket timeout时间代表的含义 | ldkxingzhe's blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">ldkxingzhe's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.ldkxingzhe.top/2019/11/13/http-timeout-org/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ldkxingzhe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ldkxingzhe's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Socket timeout时间代表的含义</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-11-13T18:34:55+08:00">
+                2019-11-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>遇到一个关于timeout的bug, 发现自己不能准确解释清楚readtimeout, writetimeout, connecttimeout具体表示的含义, 这里扒拉下源码研究下(Android平台)</p>
+<a id="more"></a>
+
+<h1 id="定位各个timeout位置"><a href="#定位各个timeout位置" class="headerlink" title="定位各个timeout位置"></a>定位各个timeout位置</h1><p>定位到使用readTimeout与connectTimeout的位置:<br>    <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 位于OkHttp的SocketConnector.java</span></span><br><span class="line"><span class="comment">// soTimeout赋值为readTimeout</span></span><br><span class="line">  <span class="function"><span class="keyword">private</span> Socket <span class="title">connectRawSocket</span><span class="params">(<span class="keyword">int</span> soTimeout, <span class="keyword">int</span> connectTimeout, Route route)</span></span></span><br><span class="line"><span class="function">	  <span class="keyword">throws</span> RouteException </span>&#123;</span><br><span class="line">	Platform platform = Platform.get();</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">	  Proxy proxy = route.getProxy();</span><br><span class="line">	  Address address = route.getAddress();</span><br><span class="line">	  Socket socket;</span><br><span class="line">	  <span class="keyword">if</span> (proxy.type() == Proxy.Type.DIRECT || proxy.type() == Proxy.Type.HTTP) &#123;</span><br><span class="line">		socket = address.getSocketFactory().createSocket();</span><br><span class="line">	  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		socket = <span class="keyword">new</span> Socket(proxy);</span><br><span class="line">	  &#125;</span><br><span class="line">	  socket.setSoTimeout(soTimeout);</span><br><span class="line">	  platform.connectSocket(socket, route.getSocketAddress(), connectTimeout);</span><br><span class="line"></span><br><span class="line">	  <span class="keyword">return</span> socket;</span><br><span class="line">	&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">	  <span class="keyword">throw</span> <span class="keyword">new</span> RouteException(e);</span><br><span class="line">	&#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<p>可以发现soTimeout(即readTimeout)直接传递各类socket的setSoTimeout. 根据其文档: 设置一个有效的soTimeout后, 对这个socket的InputStream调用read方法时将之多阻塞设置的方法. 如果超时则抛出SocketTimeoutException(内部实现同样适用poll方式: libcore/ojluni/src/main/native/SocketInputStream.c). </p>
+<p>跟踪platform.connectSocket在Android平台中, 真实实现(java部分)如下:<br>    <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">connectErrno</span><span class="params">(FileDescriptor fd, InetAddress inetAddress, <span class="keyword">int</span> port, <span class="keyword">int</span> timeoutMs)</span> <span class="keyword">throws</span> ErrnoException, IOException </span>&#123;</span><br><span class="line">	<span class="comment">// With no timeout, just call connect(2) directly.</span></span><br><span class="line">	<span class="keyword">if</span> (timeoutMs &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">		Libcore.os.connect(fd, inetAddress, port);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// For connect with a timeout, we:</span></span><br><span class="line">	<span class="comment">//   1. set the socket to non-blocking,</span></span><br><span class="line">	<span class="comment">//   2. connect(2),</span></span><br><span class="line">	<span class="comment">//   3. loop using poll(2) to decide whether we're connected, whether we should keep</span></span><br><span class="line">	<span class="comment">//      waiting, or whether we've seen a permanent failure and should give up,</span></span><br><span class="line">	<span class="comment">//   4. set the socket back to blocking.</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 1. set the socket to non-blocking.</span></span><br><span class="line">	IoUtils.setBlocking(fd, <span class="keyword">false</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2. call connect(2) non-blocking.</span></span><br><span class="line">	<span class="keyword">long</span> finishTimeNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		Libcore.os.connect(fd, inetAddress, port);</span><br><span class="line">		IoUtils.setBlocking(fd, <span class="keyword">true</span>); <span class="comment">// 4. set the socket back to blocking.</span></span><br><span class="line">		<span class="keyword">return</span>; <span class="comment">// We connected immediately.</span></span><br><span class="line">	&#125; <span class="keyword">catch</span> (ErrnoException errnoException) &#123;</span><br><span class="line">		<span class="keyword">if</span> (errnoException.errno != EINPROGRESS) &#123;</span><br><span class="line">			<span class="keyword">throw</span> errnoException;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// EINPROGRESS means we should keep trying...</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 3. loop using poll(2).</span></span><br><span class="line">	<span class="keyword">int</span> remainingTimeoutMs;</span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		remainingTimeoutMs =</span><br><span class="line">				(<span class="keyword">int</span>) TimeUnit.NANOSECONDS.toMillis(finishTimeNanos - System.nanoTime());</span><br><span class="line">		<span class="keyword">if</span> (remainingTimeoutMs &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> SocketTimeoutException(connectDetail(fd, inetAddress, port, timeoutMs,</span><br><span class="line">					<span class="keyword">null</span>));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">while</span> (!IoBridge.isConnected(fd, inetAddress, port, timeoutMs, remainingTimeoutMs));</span><br><span class="line">	IoUtils.setBlocking(fd, <span class="keyword">true</span>); <span class="comment">// 4. set the socket back to blocking.</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">isConnected</span><span class="params">(FileDescriptor fd, InetAddress inetAddress, <span class="keyword">int</span> port, <span class="keyword">int</span> timeoutMs, <span class="keyword">int</span> remainingTimeoutMs)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">	ErrnoException cause;</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		StructPollfd[] pollFds = <span class="keyword">new</span> StructPollfd[] &#123; <span class="keyword">new</span> StructPollfd() &#125;;</span><br><span class="line">		pollFds[<span class="number">0</span>].fd = fd;</span><br><span class="line">		pollFds[<span class="number">0</span>].events = (<span class="keyword">short</span>) POLLOUT;</span><br><span class="line">		<span class="keyword">int</span> rc = Libcore.os.poll(pollFds, remainingTimeoutMs);</span><br><span class="line">		<span class="keyword">if</span> (rc == <span class="number">0</span>) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">false</span>; <span class="comment">// Timeout.</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">int</span> connectError = Libcore.os.getsockoptInt(fd, SOL_SOCKET, SO_ERROR);</span><br><span class="line">		<span class="keyword">if</span> (connectError == <span class="number">0</span>) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">true</span>; <span class="comment">// Success!</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> ErrnoException(<span class="string">"isConnected"</span>, connectError); <span class="comment">// The connect(2) failed.</span></span><br><span class="line">	&#125; <span class="keyword">catch</span> (ErrnoException errnoException) &#123;</span><br><span class="line">		<span class="keyword">if</span> (!fd.valid()) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> SocketException(<span class="string">"Socket closed"</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		cause = errnoException;</span><br><span class="line">	&#125;</span><br><span class="line">	String detail = connectDetail(fd, inetAddress, port, timeoutMs, cause);</span><br><span class="line">	<span class="keyword">if</span> (cause.errno == ETIMEDOUT) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> SocketTimeoutException(detail, cause);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">throw</span> <span class="keyword">new</span> ConnectException(detail, cause);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>可以发现connecttimeout的实现原理是将socket转化为non-block模式， 然后调用系统调用poll等待一定的事件. </p>
+<p>OKHttp的writeTimeout是给okio.AsyncTimeout使用的:<br>    <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">enter</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (inQueue) <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Unbalanced enter/exit"</span>);</span><br><span class="line">  <span class="keyword">long</span> timeoutNanos = timeoutNanos();</span><br><span class="line">  <span class="keyword">boolean</span> hasDeadline = hasDeadline();</span><br><span class="line">  <span class="keyword">if</span> (timeoutNanos == <span class="number">0</span> &amp;&amp; !hasDeadline) &#123;</span><br><span class="line">	<span class="keyword">return</span>; <span class="comment">// No timeout and no deadline? Don't bother with the queue.</span></span><br><span class="line">  &#125;</span><br><span class="line">  inQueue = <span class="keyword">true</span>;</span><br><span class="line">  <span class="comment">// schedule这里实现特别low， 就是启动了一个线程</span></span><br><span class="line">  scheduleTimeout(<span class="keyword">this</span>, timeoutNanos, hasDeadline);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>其中Okio中提示了具体用法:<br>    <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// okio.Okio.java</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> AsyncTimeout <span class="title">timeout</span><span class="params">(<span class="keyword">final</span> Socket socket)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> AsyncTimeout() &#123;</span><br><span class="line">	<span class="meta">@Override</span> <span class="function"><span class="keyword">protected</span> IOException <span class="title">newTimeoutException</span><span class="params">(IOException cause)</span> </span>&#123;</span><br><span class="line">	  InterruptedIOException ioe = <span class="keyword">new</span> SocketTimeoutException(<span class="string">"timeout"</span>);</span><br><span class="line">	  <span class="keyword">if</span> (cause != <span class="keyword">null</span>) &#123;</span><br><span class="line">		ioe.initCause(cause);</span><br><span class="line">	  &#125;</span><br><span class="line">	  <span class="keyword">return</span> ioe;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span> <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">timedOut</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	  <span class="keyword">try</span> &#123;</span><br><span class="line">		socket.close();</span><br><span class="line">	  &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">		logger.log(Level.WARNING, <span class="string">"Failed to close timed out socket "</span> + socket, e);</span><br><span class="line">	  &#125;</span><br><span class="line">	&#125;</span><br><span class="line">  &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>可以发现writeTimeout由1. 每次write调用后判断执行时间, 2. 由子线程计时判断(到时见close socket)完成. </p>
+<h1 id="systemcall中的timeout"><a href="#systemcall中的timeout" class="headerlink" title="systemcall中的timeout"></a>systemcall中的timeout</h1><p>由于现在的TCP/IP栈由内核提供, 其能力也有系统调用限制. 首先看看关于socketopt能够设置哪些属性(man setsockopt). </p>
+<ul>
+<li>SO_DEBUG: 启用debug信息记录</li>
+<li>SO_REUSEADDR: 本地地址复用开启</li>
+<li>SO_REUSEPORT: 允许地址与端口被重复bind(一般用于区分TCP/UDP)</li>
+<li>SO_KEEPALIVE: 启用保持连接长活功能</li>
+<li>SO_DONTROUTE: 绕过路由器</li>
+<li>SO_SNDBUF: 设置发送缓存大小</li>
+<li>SO_RCVBUF: 设置接受缓存大小</li>
+<li>SO_LINGER: 设置socket close时等待时间(等待缓存发送完成)</li>
+<li>SO_SNDLOWAT: 设置发送数据最小值</li>
+<li>SO_RCVLOWAT: 设置接受数据最小值</li>
+<li>SO_SNDTIMEO: 设置output的timeout值</li>
+<li>SO_RCVTIMEO: 设置input的timeout值</li>
+</ul>
+<p>这里关注两个TIMEO时间, 看下原文: </p>
+<pre><code>SO_SNDTIMEO is an option to set a timeout value for output operations.  It accepts a struct timeval parameter
+with the number of seconds and microseconds used to limit waits for output operations to complete.  If a send
+operation has blocked for this much time, it returns with a partial count or with the error EWOULDBLOCK if no
+data were sent.  In the current implementation, this timer is restarted each time additional data are deliv-
+ered to the protocol, implying that the limit applies to output portions ranging in size from the low-water
+mark to the high-water mark for output.
+
+SO_RCVTIMEO is an option to set a timeout value for input operations.  It accepts a struct timeval parameter
+with the number of seconds and microseconds used to limit waits for input operations to complete.  In the
+current implementation, this timer is restarted each time additional data are received by the protocol, and
+thus the limit is in effect an inactivity timer.  If a receive operation has been blocked for this much time
+without receiving additional data, it returns with a short count or with the error EWOULDBLOCK if no data
+were received.  The struct timeval parameter must represent a positive time interval; otherwise, setsockopt()
+returns with the error EDOM.</code></pre><p>可以判定系统底层的socket是同时支持recv与send的timeout的. 看一下Java层支持的属性(libcore/luni/src/main/java/libcore/io/IoBridge.java):<br>    <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 对Java层支持的Option转换到native(名字看SO_XXX的就好)</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">setSocketOptionErrno</span><span class="params">(FileDescriptor fd, <span class="keyword">int</span> option, Object value)</span> <span class="keyword">throws</span> ErrnoException, SocketException </span>&#123;</span><br><span class="line">	<span class="keyword">switch</span> (option) &#123;</span><br><span class="line">	<span class="keyword">case</span> SocketOptions.SO_BROADCAST:</span><br><span class="line">		Libcore.os.setsockoptInt(fd, SOL_SOCKET, SO_BROADCAST, booleanToInt((Boolean) value));</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">case</span> SocketOptions.SO_KEEPALIVE:</span><br><span class="line">		Libcore.os.setsockoptInt(fd, SOL_SOCKET, SO_KEEPALIVE, booleanToInt((Boolean) value));</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">case</span> SocketOptions.SO_LINGER:</span><br><span class="line">		<span class="keyword">boolean</span> on = <span class="keyword">false</span>;</span><br><span class="line">		<span class="keyword">int</span> seconds = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">if</span> (value <span class="keyword">instanceof</span> Integer) &#123;</span><br><span class="line">			on = <span class="keyword">true</span>;</span><br><span class="line">			seconds = Math.min((Integer) value, <span class="number">65535</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		StructLinger linger = <span class="keyword">new</span> StructLinger(booleanToInt(on), seconds);</span><br><span class="line">		Libcore.os.setsockoptLinger(fd, SOL_SOCKET, SO_LINGER, linger);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">case</span> SocketOptions.SO_OOBINLINE:</span><br><span class="line">		Libcore.os.setsockoptInt(fd, SOL_SOCKET, SO_OOBINLINE, booleanToInt((Boolean) value));</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">case</span> SocketOptions.SO_RCVBUF:</span><br><span class="line">		Libcore.os.setsockoptInt(fd, SOL_SOCKET, SO_RCVBUF, (Integer) value);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">case</span> SocketOptions.SO_REUSEADDR:</span><br><span class="line">		Libcore.os.setsockoptInt(fd, SOL_SOCKET, SO_REUSEADDR, booleanToInt((Boolean) value));</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">case</span> SocketOptions.SO_SNDBUF:</span><br><span class="line">		Libcore.os.setsockoptInt(fd, SOL_SOCKET, SO_SNDBUF, (Integer) value);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">case</span> SocketOptions.SO_TIMEOUT:</span><br><span class="line">		<span class="keyword">int</span> millis = (Integer) value;</span><br><span class="line">		StructTimeval tv = StructTimeval.fromMillis(millis);</span><br><span class="line">		Libcore.os.setsockoptTimeval(fd, SOL_SOCKET, SO_RCVTIMEO, tv);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>可以发现Java层是支持SO_RCVTIMEO的, 但是SO_SNDTIMEO被Java吃了, 不再支持, 实际上Java层不再支持SO_SNDTIMEO可能是 “SNDTIMEO的值与我们理解的有很大出入”:</p>
+<p>简单介绍下TCP包传输流程: 可以将通信的双发理解成寄件人与收件人, 与他们打交道的分别是寄件人的邮箱, 收件人的邮箱. SNDTIMEO的时间限制的是寄件人将邮件放进寄件人邮箱的时间, 并不是邮件到达收件人的时间. 寄件人邮箱是有缓存的, 一般都会立即返回OK的. 所以此值的应用范围并不大, OKHttp才会封装一个writeTimeOut来作为单独的writeTimeOut. </p>
+<p>比较有意思的是BSD的man手册和linux的man手册在send函数的说明中有细微的差别(Linux的更加易懂一点): </p>
+<pre><code>#BSD:
+     No indication of failure to deliver is implicit in a send().  Locally detected errors are indicated by a return value of -1.
+
+#Linux:
+     Successful completion of a call to send() does not guarantee delivery of the message. A return value of -1 indicates only locally-detected errors.</code></pre><p>由于send函数仅仅是将数据发送到内核, 那close做了什么. 如果设置了SO_LINGER时间，则等待最多SO_LINGER时间发送缓存完成, 否则立即返回， 缺省立即返回. </p>
+<p>SO_SNDBUF的默认值位于/proc/sys/net/core/wmem_default, 允许的最大值是/proc/sys/net/core/wmem_max, 最小值是4K(system page size). 在笔者的OnePlus 6T中默认值是229376(224KB), 最大值是8388608(8192KB).</p>
+<p>SO_SNDBUF理论上是不应该小鱼带宽和延迟的乘积, 自Linux 2.4开始, TCP会根据内存情况自动调整SNDBUF的值(介于最大值， 最小值之间). </p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/android/" rel="tag"># android</a>
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/socket/" rel="tag"># socket</a>
+          
+            <a href="/tags/linux/" rel="tag"># linux</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/11/11/android-init/" rel="next" title="android init源码阅读">
+                <i class="fa fa-chevron-left"></i> android init源码阅读
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="ldkxingzhe">
+            
+              <p class="site-author-name" itemprop="name">ldkxingzhe</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">16</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#定位各个timeout位置"><span class="nav-number">1.</span> <span class="nav-text">定位各个timeout位置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#systemcall中的timeout"><span class="nav-number">2.</span> <span class="nav-text">systemcall中的timeout</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ldkxingzhe</span>
+</div>
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -2,72 +2,79 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://blog.ldkxingzhe.top/2019/11/11/android-init/</loc>
+    <loc>https://blog.ldkxingzhe.top/2019/11/13/http-timeout-org/</loc>
     
-    <lastmod>2019-11-12T03:02:24.898Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.ldkxingzhe.top/2019/11/04/android-input-system/</loc>
-    
-    <lastmod>2019-11-04T09:39:30.022Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.ldkxingzhe.top/2019/10/15/openjdk-compile-and-debug-with-clion/</loc>
-    
-    <lastmod>2019-11-04T09:22:21.947Z</lastmod>
+    <lastmod>2019-11-13T10:36:51.416Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.ldkxingzhe.top/about/index.html</loc>
     
-    <lastmod>2019-11-04T09:22:21.947Z</lastmod>
+    <lastmod>2019-11-12T11:39:44.974Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.ldkxingzhe.top/2019/10/15/openjdk-compile-and-debug-with-clion/</loc>
+    
+    <lastmod>2019-11-12T11:39:44.974Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.ldkxingzhe.top/2019/10/15/java-util-aqs/</loc>
     
-    <lastmod>2019-11-04T09:22:21.946Z</lastmod>
+    <lastmod>2019-11-12T11:39:44.973Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.ldkxingzhe.top/2019/10/25/android-service-pm/</loc>
     
-    <lastmod>2019-11-04T09:22:21.945Z</lastmod>
+    <lastmod>2019-11-12T11:39:44.972Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.ldkxingzhe.top/2019/10/15/java-proxy-and-dynamic/</loc>
     
-    <lastmod>2019-11-04T09:22:21.945Z</lastmod>
+    <lastmod>2019-11-12T11:39:44.972Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.ldkxingzhe.top/2019/10/18/android-service-am/</loc>
     
-    <lastmod>2019-11-04T09:22:21.943Z</lastmod>
+    <lastmod>2019-11-12T11:39:44.971Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.ldkxingzhe.top/2019/10/26/android-refbase-sp-wp/</loc>
     
-    <lastmod>2019-11-04T09:22:21.942Z</lastmod>
+    <lastmod>2019-11-12T11:39:44.970Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.ldkxingzhe.top/2019/10/17/android-locat-script/</loc>
     
-    <lastmod>2019-11-04T09:22:21.941Z</lastmod>
+    <lastmod>2019-11-12T11:39:44.970Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.ldkxingzhe.top/2019/11/11/android-init/</loc>
+    
+    <lastmod>2019-11-12T11:39:44.968Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.ldkxingzhe.top/2019/11/04/android-input-system/</loc>
+    
+    <lastmod>2019-11-12T11:39:44.968Z</lastmod>
     
   </url>
   
