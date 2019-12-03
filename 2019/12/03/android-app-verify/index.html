@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="android,applink,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="探究Applink的校验过程">
+<meta name="keywords" content="android,applink">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android Applink校验过程">
+<meta property="og:url" content="https://blog.ldkxingzhe.top/2019/12/03/android-app-verify/index.html">
+<meta property="og:site_name" content="ldkxingzhe&#39;s blog">
+<meta property="og:description" content="探究Applink的校验过程">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-12-03T06:14:15.866Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Android Applink校验过程">
+<meta name="twitter:description" content="探究Applink的校验过程">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://blog.ldkxingzhe.top/2019/12/03/android-app-verify/">
+
+
+
+
+
+  <title>Android Applink校验过程 | ldkxingzhe's blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">ldkxingzhe's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.ldkxingzhe.top/2019/12/03/android-app-verify/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ldkxingzhe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ldkxingzhe's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Android Applink校验过程</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-03T14:09:09+08:00">
+                2019-12-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>探究Applink的校验过程</p>
+<a id="more"></a>
+
+<p>实际上就是IntentFilter的校验, 对应的Intent的Action值为 ACTION_INTENT_FILTER_NEEDS_VERIFICATION=”android.intent.action.INTENT_FILTER_NEEDS_VERIFICATION”</p>
+<p>有两处使用的位置(一个接收处, 一个发送处):</p>
+<ul>
+<li>PackageManagerService.java: 1. 启动时根据Action获取mIntentFilterVerifierComponent值; 2. sendVerificationRequest用于发送验证请求</li>
+<li>StatementService服务中, IntentFilterrVerificationReceiver中用于过滤Intent</li>
+</ul>
+<p>两者传参值:</p>
+<ul>
+<li>URI_SCHEME(“android.content.pm.extra.INTENT_FILTER_VERIFICATION_URI_SCHEME”): url scheme的类型, 类型为String, 一般是https</li>
+<li>HOSTS(“android.content.pm.extra.INTENT_FILTER_VERIFICATION_HOSTS”): 需要验证的Hosts，类型为String, 多个String之间用” “分割, 每个App限制Host数量为10个(一次请求)</li>
+<li>PACKAGE_NAME(“android.content.pm.extra.INTENT_FILTER_VERIFICATION_PACKAGE_NAME”): 需要验证的包名, 类型String</li>
+</ul>
+<p>调用adb shell dumpsys package d打印的信息是由PackageManagerService的dump方法处理的, d表示 domain-preferrred-apps. 打印代码如下: </p>
+<pre><code><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> String prefix = <span class="string">"  "</span>;</span><br><span class="line">Collection&lt;PackageSetting&gt; allPackageSettings = mSettings.mPackages.values();</span><br><span class="line"><span class="keyword">if</span> (allPackageSettings.size() == <span class="number">0</span>) &#123;</span><br><span class="line">	pw.println(<span class="string">"No domain preferred apps!"</span>);</span><br><span class="line">	pw.println();</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">	pw.println(<span class="string">"App verification status:"</span>);</span><br><span class="line">	pw.println();</span><br><span class="line">	count = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (PackageSetting ps : allPackageSettings) &#123;</span><br><span class="line">		IntentFilterVerificationInfo ivi = ps.getIntentFilterVerificationInfo();</span><br><span class="line">		<span class="keyword">if</span> (ivi == <span class="keyword">null</span> || ivi.getPackageName() == <span class="keyword">null</span>) <span class="keyword">continue</span>;</span><br><span class="line">		pw.println(prefix + <span class="string">"Package: "</span> + ivi.getPackageName());</span><br><span class="line">		pw.println(prefix + <span class="string">"Domains: "</span> + ivi.getDomainsString());</span><br><span class="line">		pw.println(prefix + <span class="string">"Status:  "</span> + ivi.getStatusString());</span><br><span class="line">		pw.println();</span><br><span class="line">		count++;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (count == <span class="number">0</span>) &#123;</span><br><span class="line">		pw.println(prefix + <span class="string">"No app verification established."</span>);</span><br><span class="line">		pw.println();</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> userId : sUserManager.getUserIds()) &#123;</span><br><span class="line">		pw.println(<span class="string">"App linkages for user "</span> + userId + <span class="string">":"</span>);</span><br><span class="line">		pw.println();</span><br><span class="line">		count = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">for</span> (PackageSetting ps : allPackageSettings) &#123;</span><br><span class="line">			<span class="keyword">final</span> <span class="keyword">long</span> status = ps.getDomainVerificationStatusForUser(userId);</span><br><span class="line">			<span class="keyword">if</span> (status &gt;&gt; <span class="number">32</span> == INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_UNDEFINED</span><br><span class="line">					&amp;&amp; !DEBUG_DOMAIN_VERIFICATION) &#123;</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			pw.println(prefix + <span class="string">"Package: "</span> + ps.name);</span><br><span class="line">			pw.println(prefix + <span class="string">"Domains: "</span> + dumpDomainString(ps.name));</span><br><span class="line">			String statusStr = IntentFilterVerificationInfo.</span><br><span class="line">					getStatusStringFromValue(status);</span><br><span class="line">			pw.println(prefix + <span class="string">"Status:  "</span> + statusStr);</span><br><span class="line">			pw.println();</span><br><span class="line">			count++;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (count == <span class="number">0</span>) &#123;</span><br><span class="line">			pw.println(prefix + <span class="string">"No configured app linkages."</span>);</span><br><span class="line">			pw.println();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></code></pre><p>可以发现每个安装包Package都有一个IntentFilterVerificationInfo的对象, status状态有一下几种: </p>
+<ul>
+<li>always: 表示该App是该链接的默认App, 即使有两个App拥有相同的授权host, 也不会弹出选择App的对话框, 代表校验成功</li>
+<li>ask: 表示如果有两个应用host, path验证通过, 系统会弹出对话框供用户选择, 代表校验失败</li>
+<li>never: Applink永远不会打开该App</li>
+<li>always-ask: always与ask的混合体, 即时某个App的状态是always, 其也会作为选择的一部分(没见过这种状态)</li>
+<li>undefined: 初始值， 仅表示未校验完成.</li>
+</ul>
+<p>从源代码验证文档细节, PackageManagerService.filterCandidatesWithDomainPreferredActivitiesLPr:</p>
+<ul>
+<li>第一步: 收集always, undefined, alwaysAsk, never, matchAll(表示浏览器)各种状态的列表</li>
+<li>第二步: 如果always候选人存在, 则结果中放置全部的always候选人, 不包含浏览器</li>
+<li>第二步: 如果always候选人不存在, 则将undefined的列表(ask与undefined行为一致)放置在候选人中, 并且包含浏览器</li>
+<li>第三步: 如果存在always-ask状态的候选人, 将其也放在候选人列表中, 后续包含浏览器<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> List&lt;ResolveInfo&gt; <span class="title">filterCandidatesWithDomainPreferredActivitiesLPr</span><span class="params">(Intent intent,</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">int</span> matchFlags, List&lt;ResolveInfo&gt; candidates, CrossProfileDomainInfo xpDomainInfo,</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">int</span> userId)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">final</span> <span class="keyword">boolean</span> debug = (intent.getFlags() &amp; Intent.FLAG_DEBUG_LOG_RESOLUTION) != <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (DEBUG_PREFERRED || DEBUG_DOMAIN_VERIFICATION) &#123;</span><br><span class="line">		Slog.v(TAG, <span class="string">"Filtering results with preferred activities. Candidates count: "</span> +</span><br><span class="line">				candidates.size());</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	ArrayList&lt;ResolveInfo&gt; result = <span class="keyword">new</span> ArrayList&lt;ResolveInfo&gt;();</span><br><span class="line">	ArrayList&lt;ResolveInfo&gt; alwaysList = <span class="keyword">new</span> ArrayList&lt;ResolveInfo&gt;();</span><br><span class="line">	ArrayList&lt;ResolveInfo&gt; undefinedList = <span class="keyword">new</span> ArrayList&lt;ResolveInfo&gt;();</span><br><span class="line">	ArrayList&lt;ResolveInfo&gt; alwaysAskList = <span class="keyword">new</span> ArrayList&lt;ResolveInfo&gt;();</span><br><span class="line">	ArrayList&lt;ResolveInfo&gt; neverList = <span class="keyword">new</span> ArrayList&lt;ResolveInfo&gt;();</span><br><span class="line">	ArrayList&lt;ResolveInfo&gt; matchAllList = <span class="keyword">new</span> ArrayList&lt;ResolveInfo&gt;();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">synchronized</span> (mPackages) &#123;</span><br><span class="line">		<span class="keyword">final</span> <span class="keyword">int</span> count = candidates.size();</span><br><span class="line">		<span class="comment">// First, try to use linked apps. Partition the candidates into four lists:</span></span><br><span class="line">		<span class="comment">// one for the final results, one for the "do not use ever", one for "undefined status"</span></span><br><span class="line">		<span class="comment">// and finally one for "browser app type".</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> n=<span class="number">0</span>; n&lt;count; n++) &#123;</span><br><span class="line">			ResolveInfo info = candidates.get(n);</span><br><span class="line">			String packageName = info.activityInfo.packageName;</span><br><span class="line">			PackageSetting ps = mSettings.mPackages.get(packageName);</span><br><span class="line">			<span class="keyword">if</span> (ps != <span class="keyword">null</span>) &#123;</span><br><span class="line">				<span class="comment">// Add to the special match all list (Browser use case)</span></span><br><span class="line">				<span class="keyword">if</span> (info.handleAllWebDataURI) &#123;</span><br><span class="line">					matchAllList.add(info);</span><br><span class="line">					<span class="keyword">continue</span>;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="comment">// Try to get the status from User settings first</span></span><br><span class="line">				<span class="keyword">long</span> packedStatus = getDomainVerificationStatusLPr(ps, userId);</span><br><span class="line">				<span class="keyword">int</span> status = (<span class="keyword">int</span>)(packedStatus &gt;&gt; <span class="number">32</span>);</span><br><span class="line">				<span class="keyword">int</span> linkGeneration = (<span class="keyword">int</span>)(packedStatus &amp; <span class="number">0xFFFFFFFF</span>);</span><br><span class="line">				<span class="keyword">if</span> (status == INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_ALWAYS) &#123;</span><br><span class="line">					<span class="keyword">if</span> (DEBUG_DOMAIN_VERIFICATION || debug) &#123;</span><br><span class="line">						Slog.i(TAG, <span class="string">"  + always: "</span> + info.activityInfo.packageName</span><br><span class="line">								+ <span class="string">" : linkgen="</span> + linkGeneration);</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="comment">// Use link-enabled generation as preferredOrder, i.e.</span></span><br><span class="line">					<span class="comment">// prefer newly-enabled over earlier-enabled.</span></span><br><span class="line">					info.preferredOrder = linkGeneration;</span><br><span class="line">					alwaysList.add(info);</span><br><span class="line">				&#125; <span class="keyword">else</span> <span class="keyword">if</span> (status == INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_NEVER) &#123;</span><br><span class="line">					<span class="keyword">if</span> (DEBUG_DOMAIN_VERIFICATION || debug) &#123;</span><br><span class="line">						Slog.i(TAG, <span class="string">"  + never: "</span> + info.activityInfo.packageName);</span><br><span class="line">					&#125;</span><br><span class="line">					neverList.add(info);</span><br><span class="line">				&#125; <span class="keyword">else</span> <span class="keyword">if</span> (status == INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_ALWAYS_ASK) &#123;</span><br><span class="line">					<span class="keyword">if</span> (DEBUG_DOMAIN_VERIFICATION || debug) &#123;</span><br><span class="line">						Slog.i(TAG, <span class="string">"  + always-ask: "</span> + info.activityInfo.packageName);</span><br><span class="line">					&#125;</span><br><span class="line">					alwaysAskList.add(info);</span><br><span class="line">				&#125; <span class="keyword">else</span> <span class="keyword">if</span> (status == INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_UNDEFINED ||</span><br><span class="line">						status == INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_ASK) &#123;</span><br><span class="line">					<span class="keyword">if</span> (DEBUG_DOMAIN_VERIFICATION || debug) &#123;</span><br><span class="line">						Slog.i(TAG, <span class="string">"  + ask: "</span> + info.activityInfo.packageName);</span><br><span class="line">					&#125;</span><br><span class="line">					undefinedList.add(info);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// We'll want to include browser possibilities in a few cases</span></span><br><span class="line">		<span class="keyword">boolean</span> includeBrowser = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// First try to add the "always" resolution(s) for the current user, if any</span></span><br><span class="line">		<span class="keyword">if</span> (alwaysList.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">			result.addAll(alwaysList);</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="comment">// Add all undefined apps as we want them to appear in the disambiguation dialog.</span></span><br><span class="line">			result.addAll(undefinedList);</span><br><span class="line">			<span class="comment">// Maybe add one for the other profile.</span></span><br><span class="line">			<span class="keyword">if</span> (xpDomainInfo != <span class="keyword">null</span> &amp;&amp; (</span><br><span class="line">					xpDomainInfo.bestDomainVerificationStatus</span><br><span class="line">					!= INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_NEVER)) &#123;</span><br><span class="line">				result.add(xpDomainInfo.resolveInfo);</span><br><span class="line">			&#125;</span><br><span class="line">			includeBrowser = <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// The presence of any 'always ask' alternatives means we'll also offer browsers.</span></span><br><span class="line">		<span class="comment">// If there were 'always' entries their preferred order has been set, so we also</span></span><br><span class="line">		<span class="comment">// back that off to make the alternatives equivalent</span></span><br><span class="line">		<span class="keyword">if</span> (alwaysAskList.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">			<span class="keyword">for</span> (ResolveInfo i : result) &#123;</span><br><span class="line">				i.preferredOrder = <span class="number">0</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			result.addAll(alwaysAskList);</span><br><span class="line">			includeBrowser = <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (includeBrowser) &#123;</span><br><span class="line">			<span class="comment">// Also add browsers (all of them or only the default one)</span></span><br><span class="line">			<span class="keyword">if</span> (DEBUG_DOMAIN_VERIFICATION) &#123;</span><br><span class="line">				Slog.v(TAG, <span class="string">"   ...including browsers in candidate set"</span>);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> ((matchFlags &amp; MATCH_ALL) != <span class="number">0</span>) &#123;</span><br><span class="line">				result.addAll(matchAllList);</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="comment">// Browser/generic handling case.  If there's a default browser, go straight</span></span><br><span class="line">				<span class="comment">// to that (but only if there is no other higher-priority match).</span></span><br><span class="line">				<span class="keyword">final</span> String defaultBrowserPackageName = getDefaultBrowserPackageName(userId);</span><br><span class="line">				<span class="keyword">int</span> maxMatchPrio = <span class="number">0</span>;</span><br><span class="line">				ResolveInfo defaultBrowserMatch = <span class="keyword">null</span>;</span><br><span class="line">				<span class="keyword">final</span> <span class="keyword">int</span> numCandidates = matchAllList.size();</span><br><span class="line">				<span class="keyword">for</span> (<span class="keyword">int</span> n = <span class="number">0</span>; n &lt; numCandidates; n++) &#123;</span><br><span class="line">					ResolveInfo info = matchAllList.get(n);</span><br><span class="line">					<span class="comment">// track the highest overall match priority...</span></span><br><span class="line">					<span class="keyword">if</span> (info.priority &gt; maxMatchPrio) &#123;</span><br><span class="line">						maxMatchPrio = info.priority;</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="comment">// ...and the highest-priority default browser match</span></span><br><span class="line">					<span class="keyword">if</span> (info.activityInfo.packageName.equals(defaultBrowserPackageName)) &#123;</span><br><span class="line">						<span class="keyword">if</span> (defaultBrowserMatch == <span class="keyword">null</span></span><br><span class="line">								|| (defaultBrowserMatch.priority &lt; info.priority)) &#123;</span><br><span class="line">							<span class="keyword">if</span> (debug) &#123;</span><br><span class="line">								Slog.v(TAG, <span class="string">"Considering default browser match "</span> + info);</span><br><span class="line">							&#125;</span><br><span class="line">							defaultBrowserMatch = info;</span><br><span class="line">						&#125;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">if</span> (defaultBrowserMatch != <span class="keyword">null</span></span><br><span class="line">						&amp;&amp; defaultBrowserMatch.priority &gt;= maxMatchPrio</span><br><span class="line">						&amp;&amp; !TextUtils.isEmpty(defaultBrowserPackageName))</span><br><span class="line">				&#123;</span><br><span class="line">					<span class="keyword">if</span> (debug) &#123;</span><br><span class="line">						Slog.v(TAG, <span class="string">"Default browser match "</span> + defaultBrowserMatch);</span><br><span class="line">					&#125;</span><br><span class="line">					result.add(defaultBrowserMatch);</span><br><span class="line">				&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">					result.addAll(matchAllList);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="comment">// If there is nothing selected, add all candidates and remove the ones that the user</span></span><br><span class="line">			<span class="comment">// has explicitly put into the INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_NEVER state</span></span><br><span class="line">			<span class="keyword">if</span> (result.size() == <span class="number">0</span>) &#123;</span><br><span class="line">				result.addAll(candidates);</span><br><span class="line">				result.removeAll(neverList);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (DEBUG_PREFERRED || DEBUG_DOMAIN_VERIFICATION) &#123;</span><br><span class="line">		Slog.v(TAG, <span class="string">"Filtered results with preferred activities. New candidates count: "</span> +</span><br><span class="line">				result.size());</span><br><span class="line">		<span class="keyword">for</span> (ResolveInfo info : result) &#123;</span><br><span class="line">			Slog.v(TAG, <span class="string">"  + "</span> + info.activityInfo);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>注意校验过程中的签名获取: </p>
+<pre><code><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns the normalized sha-256 fingerprints of a given package according to the Android</span></span><br><span class="line"><span class="comment"> * package manager.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> List&lt;String&gt; <span class="title">getCertFingerprintsFromPackageManager</span><span class="params">(String packageName,</span></span></span><br><span class="line"><span class="function"><span class="params">		Context context)</span> <span class="keyword">throws</span> NameNotFoundException </span>&#123;</span><br><span class="line">	Signature[] signatures = context.getPackageManager().getPackageInfo(packageName,</span><br><span class="line">			PackageManager.GET_SIGNATURES).signatures;</span><br><span class="line">	ArrayList&lt;String&gt; result = <span class="keyword">new</span> ArrayList&lt;String&gt;(signatures.length);</span><br><span class="line">	<span class="keyword">for</span> (Signature sig : signatures) &#123;</span><br><span class="line">		result.add(computeNormalizedSha256Fingerprint(sig.toByteArray()));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></code></pre><p><strong>另外需要注意的是:</strong><br>AOSP中Intent Filter Verifier: </p>
+<pre><code><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ adb shell dumpsys package i</span><br><span class="line">Intent Filter Verifier:</span><br><span class="line">  Using: com.android.statementservice (uid=10048)</span><br></pre></td></tr></table></figure></code></pre><p>使用Google Play Service的Intent Filter Verifier: </p>
+<pre><code><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ adb shell dumpsys package i</span><br><span class="line">Intent Filter Verifier:</span><br><span class="line">  Using: com.google.android.gms (uid=10028)</span><br></pre></td></tr></table></figure></code></pre><p>我们用来分析的是开源的statementservice, 在statementservice并不校验Google Console。 但是gms是需要校验Google Console的, 请参见官方文档 “to verify ownership through Google Search Console”</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/android/" rel="tag"># android</a>
+          
+            <a href="/tags/applink/" rel="tag"># applink</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/11/13/android-zygote/" rel="next" title="android zygote进程源码阅读">
+                <i class="fa fa-chevron-left"></i> android zygote进程源码阅读
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="ldkxingzhe">
+            
+              <p class="site-author-name" itemprop="name">ldkxingzhe</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">12</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ldkxingzhe</span>
+</div>
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
