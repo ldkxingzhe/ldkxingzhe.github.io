@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="android,service,surfacefling,BufferQueue,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="SurfaceFlinger一个native service， 用于合成窗口呈现给用户。 Android通过BufferQueue, 将不同进程的Android组件: WindowManagerService, 应用进程， SurfaceFlinger联系在一起. 这里大致介绍下BufferQueue的实现原理， 另外涉及到SurfaceSession、SurfaceControl, Surfac">
+<meta name="keywords" content="android,service,surfacefling,BufferQueue">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android Service 之 SurfaceFlinger">
+<meta property="og:url" content="https://blog.ldkxingzhe.top/2019/12/10/android-service-surfacefling/index.html">
+<meta property="og:site_name" content="ldkxingzhe&#39;s blog">
+<meta property="og:description" content="SurfaceFlinger一个native service， 用于合成窗口呈现给用户。 Android通过BufferQueue, 将不同进程的Android组件: WindowManagerService, 应用进程， SurfaceFlinger联系在一起. 这里大致介绍下BufferQueue的实现原理， 另外涉及到SurfaceSession、SurfaceControl, Surfac">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/ape_fwk_graphics.png">
+<meta property="og:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/android_surface_flinger_graphics_pipeline.png">
+<meta property="og:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/android_surfaceflinger_bufferqueue.png">
+<meta property="og:updated_time" content="2019-12-10T12:18:45.336Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Android Service 之 SurfaceFlinger">
+<meta name="twitter:description" content="SurfaceFlinger一个native service， 用于合成窗口呈现给用户。 Android通过BufferQueue, 将不同进程的Android组件: WindowManagerService, 应用进程， SurfaceFlinger联系在一起. 这里大致介绍下BufferQueue的实现原理， 另外涉及到SurfaceSession、SurfaceControl, Surfac">
+<meta name="twitter:image" content="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/ape_fwk_graphics.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://blog.ldkxingzhe.top/2019/12/10/android-service-surfacefling/">
+
+
+
+
+
+  <title>Android Service 之 SurfaceFlinger | ldkxingzhe's blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">ldkxingzhe's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.ldkxingzhe.top/2019/12/10/android-service-surfacefling/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ldkxingzhe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ldkxingzhe's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Android Service 之 SurfaceFlinger</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-10T20:15:12+08:00">
+                2019-12-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>SurfaceFlinger一个native service， 用于合成窗口呈现给用户。 Android通过BufferQueue, 将不同进程的Android组件: WindowManagerService, 应用进程， SurfaceFlinger联系在一起. 这里大致介绍下BufferQueue的实现原理， 另外涉及到SurfaceSession、SurfaceControl, Surface这些基本概念. </p>
+<a id="more"></a>
+<h1 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h1><p>aosp官网对Graphics的介绍文章<a href="https://source.android.com/devices/graphics" target="_blank" rel="noopener">https://source.android.com/devices/graphics</a>,  首先是Android Graphic系统的关键组件组成:</p>
+<p><img src="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/ape_fwk_graphics.png" alt="img"></p>
+<p>介绍了整个框架的数据流:</p>
+<p><img src="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/android_surface_flinger_graphics_pipeline.png" alt="img"></p>
+<p>以及连接各个组件的中间件BufferQueue, 通过BufferQueue这个跨进程方案将Android的图形组件联系在了一起:</p>
+<p><img src="https://ldk-blog.oss-cn-beijing.aliyuncs.com/blog/android_surfaceflinger_bufferqueue.png" alt="img"></p>
+<p>本文在此基础上, 研究下各个组件的细节. </p>
+<h1 id="中间件BufferQueue"><a href="#中间件BufferQueue" class="headerlink" title="中间件BufferQueue"></a>中间件BufferQueue</h1><p>之所以先从BufferQueue这个中间件开始, 跟阅读Framework时先读懂Binder机制的原因相同: 1. 他们都是中间件, 实现上比较独立, 从简单易懂的来. 2. BufferQueue被大量使用, 弄懂其他组件时, 无法绕过BufferQueue. </p>
+<p>首先BufferQueue用于一个Buffer池的队列, 通过Android Binder在进程间传递Buffer, 我们都知道Binder机制由1M的带宽限制, 不适合传输大信息, BufferQueue的Producer与Consumer接口是通过Binder机制调用的, Buffer传输是通过匿名共享内存实现的. </p>
+<p>frameworks/native/include/gui/BufferQueueCore.h文件中描述了BufferQueue的核心结构:<br>    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当然还有其他如listener， mIsAbandoned, mConsumerControlledByApp这些属性记录BufferQueue的状态</span></span><br><span class="line"><span class="comment">// mSlots is an array of buffer slots that must be mirrored on the producer</span></span><br><span class="line"><span class="comment">// side. This allows buffer ownership to be transferred between the producer</span></span><br><span class="line"><span class="comment">// and consumer without sending a GraphicBuffer over Binder. The entire</span></span><br><span class="line"><span class="comment">// array is initialized to NULL at construction time, and buffers are</span></span><br><span class="line"><span class="comment">// allocated for a slot when requestBuffer is called with that slot's index.</span></span><br><span class="line">BufferQueueDefs::SlotsType mSlots;</span><br></pre></td></tr></table></figure></p>
+<p>其中mSlots是一个BufferSlot数组(frameworks/native/libs/gui/include/gui/BufferSlot.h):</p>
+<pre><code><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// mGraphicBuffer points to the buffer allocated for this slot or is NULL</span></span><br><span class="line"><span class="comment">// if no buffer has been allocated.</span></span><br><span class="line">sp&lt;GraphicBuffer&gt; mGraphicBuffer;</span><br><span class="line"></span><br><span class="line"><span class="comment">// mBufferState is the current state of this buffer slot.</span></span><br><span class="line">BufferState mBufferState;</span><br><span class="line"></span><br><span class="line"><span class="comment">// mFence is a fence which will signal when work initiated by the</span></span><br><span class="line"><span class="comment">// previous owner of the buffer is finished. When the buffer is FREE,</span></span><br><span class="line"><span class="comment">// the fence indicates when the consumer has finished reading</span></span><br><span class="line"><span class="comment">// from the buffer, or when the producer has finished writing if it</span></span><br><span class="line"><span class="comment">// called cancelBuffer after queueing some writes. When the buffer is</span></span><br><span class="line"><span class="comment">// QUEUED, it indicates when the producer has finished filling the</span></span><br><span class="line"><span class="comment">// buffer. When the buffer is DEQUEUED or ACQUIRED, the fence has been</span></span><br><span class="line"><span class="comment">// passed to the consumer or producer along with ownership of the</span></span><br><span class="line"><span class="comment">// buffer, and mFence is set to NO_FENCE.</span></span><br><span class="line">sp&lt;Fence&gt; mFence;</span><br></pre></td></tr></table></figure></code></pre><p>其中GraphicBuffer(frameworks/native/libs/gui/include/ui/GraphicBuffer.h)中记录着Buffer的内存信息(GraphicBufferMapper.h). 其中mBufferState记录的是当前这个Buffer的状态:</p>
+<ul>
+<li>FREE: 表示这块Buffer可以被Producer dequeued, 此时Buffer的拥有者是BufferQueue, call dequeueBuffer &#x2014;&gt; DEQUEUED</li>
+<li>DEQUEUED: 表示Buffer已经被Producer占用, 此时procuderr只要收到fence通知，就可以修改缓存内容, 此时Buffer的所有者是producer, call queueBuffer or attachBufferr &#x2013;&gt; QUEUED, call cancelBuffer or detachBuffer &#x2014;&gt; FREE</li>
+<li>QUEUED: 表示Buffer已经被Producer提交, 一定时间内，Buffer依然可以被Producer修改. call acquireBuffer -&gt; ACQUIRED, or &#x2013;&gt; FREE</li>
+<li>ACQUIRED: 表示Buffer已经被Consumer获取, 直到对应的fence被通知consumer才可以消费 call releaseBufferr detachBuffer &#x2013;&gt; FREE</li>
+<li>SHARED: 表示Bufferr在共享模式下</li>
+</ul>
+<p>由BufferQueue::createBufferQueue方法可知， BufferQueue producer的服务端实现为BufferQueueProducer, consumer的服务端实现为BufferQueueConsumer</p>
+<h2 id="生产者视角-IGraphicBufferProducer"><a href="#生产者视角-IGraphicBufferProducer" class="headerlink" title="生产者视角: IGraphicBufferProducer"></a>生产者视角: IGraphicBufferProducer</h2><p>由于是一个跨进程通信, 要说IGraphicBufferrProducer在服务端与客户端相关实现, 在Client侧典型实现为Surface, 在Server侧实现是BufferQueueProducer. </p>
+<pre><code><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Client侧:</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Surface</span> /*:</span>精简掉父类*/ &#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">BufferSlot</span> &#123;</span></span><br><span class="line">	sp&lt;GraphicBuffer&gt; buffer;</span><br><span class="line">	Region dirtyRegion;</span><br><span class="line">  &#125;</span><br><span class="line">  sp&lt;IGraphicBufferProducer&gt; mGraphicBufferProducer;</span><br><span class="line">  BufferSlot mSlots[NUM_BUFFER_SLOTS];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Server侧</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BufferQueueProducer</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">	<span class="comment">// This references mCore-&gt;mSlots. Lock mCore-&gt;mMutex while accessing.</span></span><br><span class="line">	BufferQueueDefs::SlotsType&amp; mSlots;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></code></pre><p>在Serverr端与Client端的mSlots是一个镜像关系, 我们的目的就是希望两者状态一致, 所以就有一个主从关系, Server端为主, Client端为从。 更改流程: </p>
+<ul>
+<li>dequeueBuffer(告诉Server端, 我需要一个Buffer, 请给我分配一个坑位吧),</li>
+<li>requestBuffer(我已经占了一个坑位, 现在请将坑位的内存信息发给我吧),</li>
+<li>attachBuffer: 我已经快画完了，将这块内存提交给BufferQueue通知consumer消费吧</li>
+<li>queueBuffer: 我画完了, 将这块内存提交给BufferQueue通知consumer消费, 这个是由Java层unLockAndPost调用的</li>
+</ul>
+<p>dequeuedBuffer Server端实现简述: </p>
+<ul>
+<li><ol>
+<li>通过waitForFreeSlotThenRelock, 获取一个合适的空槽.</li>
+</ol>
+</li>
+<li><ol start="2">
+<li>校验是否是sharemodel的reallocation.</li>
+</ol>
+</li>
+<li><ol start="3">
+<li>若需要重新分配, 重新构造一个GraphicBuffer并initCheck</li>
+</ol>
+</li>
+<li><ol start="4">
+<li>调用Consumer的addAndGetFrameTimestamps</li>
+</ol>
+</li>
+<li>将几号坑位等信息返回给客户端<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> BufferQueueProducer::requestBuffer(<span class="keyword">int</span> slot, sp&lt;GraphicBuffer&gt;* buf) &#123;</span><br><span class="line">	Mutex::<span class="function">Autolock <span class="title">lock</span><span class="params">(mCore-&gt;mMutex)</span></span>;</span><br><span class="line">	<span class="keyword">if</span> (mCore-&gt;mIsAbandoned) &#123;</span><br><span class="line">		BQ_LOGE(<span class="string">"requestBuffer: BufferQueue has been abandoned"</span>);</span><br><span class="line">		<span class="keyword">return</span> NO_INIT;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (mCore-&gt;mConnectedApi == BufferQueueCore::NO_CONNECTED_API) &#123;</span><br><span class="line">		BQ_LOGE(<span class="string">"requestBuffer: BufferQueue has no connected producer"</span>);</span><br><span class="line">		<span class="keyword">return</span> NO_INIT;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (slot &lt; <span class="number">0</span> || slot &gt;= BufferQueueDefs::NUM_BUFFER_SLOTS) &#123;</span><br><span class="line">		BQ_LOGE(<span class="string">"requestBuffer: slot index %d out of range [0, %d)"</span>,</span><br><span class="line">				slot, BufferQueueDefs::NUM_BUFFER_SLOTS);</span><br><span class="line">		<span class="keyword">return</span> BAD_VALUE;</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> (!mSlots[slot].mBufferState.isDequeued()) &#123;</span><br><span class="line">		BQ_LOGE(<span class="string">"requestBuffer: slot %d is not owned by the producer "</span></span><br><span class="line">				<span class="string">"(state = %s)"</span>, slot, mSlots[slot].mBufferState.<span class="built_in">string</span>());</span><br><span class="line">		<span class="keyword">return</span> BAD_VALUE;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	mSlots[slot].mRequestBufferCalled = <span class="literal">true</span>;</span><br><span class="line">	*buf = mSlots[slot].mGraphicBuffer;   <span class="comment">// 直接将对应卡槽的GraphicBuffer对象进行了回传</span></span><br><span class="line">	<span class="keyword">return</span> NO_ERROR;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>回传的Buffer内容见frameworks/native/libs/nativebase/include/nativebase/nativebase.h</p>
+<h2 id="消费者视角-IGraphicBufferConsumer"><a href="#消费者视角-IGraphicBufferConsumer" class="headerlink" title="消费者视角: IGraphicBufferConsumer"></a>消费者视角: IGraphicBufferConsumer</h2><p>略</p>
+<h1 id="SurfaceSession"><a href="#SurfaceSession" class="headerlink" title="SurfaceSession:"></a>SurfaceSession:</h1><p>Session是一个会话的意思， 在CS架构中比较常见, 用于双方记录一些会话信息. SurfaceSession用来代表一个与surfaceflinger的连接，通过他可以用来创建一个或多个Surrface实例. </p>
+<p>构造位置:</p>
+<ul>
+<li>由WindowManagerService的构造函数构造, mFxSession = new SurfaceSession()</li>
+<li>由com.android.server.wm.Session.windowAddedLocked中创建 mSurfaceSession = new SurfaceSession()</li>
+<li>由SurfaceView.updateSurface中按需构造一个 mSurfaceSession = new SurfaceSession(viewRoot.mSurface);</li>
+<li>有TaskSnapshotSurface的drawSizeMismatchSnapShot中构造一个</li>
+</ul>
+<p>WindowManagerService的mFxSession, 用于水印，进度条之类的系统层UI, 拖拽动画的绘制也是使用这个SurfaceSession的. </p>
+<p>com.android.server.wm.Session对象运行在WindowManagerService所在进程, 构造由openSession方法触发(由WindowManagerGlobal getWindowSession触发). 而Session的windowAddedLocked方法由ViewRootImpl的setView调用Session的addToDisplyXXX触发. </p>
+<p>SurfaceView就是在View preDraw前与scroll后判断下是否需要创建SurfaceSession.</p>
+<p>SurfaceSession提供的能力: </p>
+<ul>
+<li>SurfaceSession构造函数需要: SurfaceSession的构造函数调用了nativeCreate方法, 创建了一个SurfaceComposerClient对象, SurfaceControl的构造函数的nativeCreate 调用这个SurfaceComposerClient的createSurface创建一个Surface对象.</li>
+</ul>
+<p>其中SurfaceComposerClient可以看成ISurfaceComposerClient的Bp端, </p>
+<h1 id="SurfaceControl"><a href="#SurfaceControl" class="headerlink" title="SurfaceControl:"></a>SurfaceControl:</h1><p>控制器, 可以对Surface进行一系列的操作,<br>java层的构造位置: </p>
+<ul>
+<li>WindowSurfacePlacer.java的createThumbnailAppAnimator中构造</li>
+<li>由SurfaceControlWithBackground的构造函数调用, SurfaceView中</li>
+<li>由SurfaceControlWithBackground构造, 在WindowSurfaceController中构造.</li>
+<li>由WindowManagerService.prepareDragSurface创建</li>
+</ul>
+<p>native层的构造位置: </p>
+<ul>
+<li>SurfaceComposerClient.cpp的createSurface中创建, SurfaceComposerClient由SurfaceSession的jni(nativeCreate)调用创建</li>
+</ul>
+<p>SurfaceComposerClient在onFirstRef中通过Binder的surfaceflinger service的 createConnection()构造一个新的连接. </p>
+<p><strong>Surface:</strong><br>Surface是用来操控一块原始buffer数据, Surface通过Binder的IPC机制将Bufferr传递给BufferrQueue(通过producer接口). </p>
+<h1 id="ISurfaceComposerClient"><a href="#ISurfaceComposerClient" class="headerlink" title="ISurfaceComposerClient"></a>ISurfaceComposerClient</h1><p>提供一下方法:<br>    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">virtual</span> status_t <span class="title">createSurface</span><span class="params">(<span class="keyword">const</span> String8&amp; name, <span class="keyword">uint32_t</span> w, <span class="keyword">uint32_t</span> h, PixelFormat format,</span></span></span><br><span class="line"><span class="function"><span class="params">							   <span class="keyword">uint32_t</span> flags, <span class="keyword">const</span> sp&lt;IBinder&gt;&amp; parent, <span class="keyword">uint32_t</span> windowType,</span></span></span><br><span class="line"><span class="function"><span class="params">							   <span class="keyword">uint32_t</span> ownerUid, sp&lt;IBinder&gt;* handle,</span></span></span><br><span class="line"><span class="function"><span class="params">							   sp&lt;IGraphicBufferProducer&gt;* gbp)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">virtual</span> status_t <span class="title">destroySurface</span><span class="params">(<span class="keyword">const</span> sp&lt;IBinder&gt;&amp; handle)</span> </span>= <span class="number">0</span>;</span><br><span class="line"><span class="function"><span class="keyword">virtual</span> status_t <span class="title">clearLayerFrameStats</span><span class="params">(<span class="keyword">const</span> sp&lt;IBinder&gt;&amp; handle)</span> <span class="keyword">const</span> </span>= <span class="number">0</span>;</span><br><span class="line"><span class="function"><span class="keyword">virtual</span> status_t <span class="title">getLayerFrameStats</span><span class="params">(<span class="keyword">const</span> sp&lt;IBinder&gt;&amp; handle, FrameStats* outStats)</span> <span class="keyword">const</span> </span>= <span class="number">0</span>;</span><br></pre></td></tr></table></figure></p>
+<p>createSurface中调用服务端的createSurface方法, 根据返回值构造了一个SurfaceControl对象:, createSurface其调用位置:</p>
+<ul>
+<li>android_view_SurfaceControl.cpp的nativeCreate(由java层的SurfaceControl构造函数触发)</li>
+</ul>
+<p>其服务端实现为frameworks/native/services/surfaceflinger/Client.h<br>    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Client</span> :</span> <span class="keyword">public</span> BnSurfaceComposerClient</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="function"><span class="keyword">explicit</span> <span class="title">Client</span><span class="params">(<span class="keyword">const</span> sp&lt;SurfaceFlinger&gt;&amp; flinger)</span></span>;</span><br><span class="line">	Client(<span class="keyword">const</span> sp&lt;SurfaceFlinger&gt;&amp; flinger, <span class="keyword">const</span> sp&lt;Layer&gt;&amp; parentLayer);</span><br><span class="line">	~Client();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">status_t</span> initCheck() <span class="keyword">const</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// protected by SurfaceFlinger::mStateLock</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">attachLayer</span><span class="params">(<span class="keyword">const</span> sp&lt;IBinder&gt;&amp; handle, <span class="keyword">const</span> sp&lt;Layer&gt;&amp; layer)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">detachLayer</span><span class="params">(<span class="keyword">const</span> Layer* layer)</span></span>;</span><br><span class="line"></span><br><span class="line">	sp&lt;Layer&gt; getLayerUser(<span class="keyword">const</span> sp&lt;IBinder&gt;&amp; handle) <span class="keyword">const</span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">setParentLayer</span><span class="params">(<span class="keyword">const</span> sp&lt;Layer&gt;&amp; parentLayer)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">	<span class="comment">// ISurfaceComposerClient interface</span></span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> status_t <span class="title">createSurface</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">			<span class="keyword">const</span> String8&amp; name,</span></span></span><br><span class="line"><span class="function"><span class="params">			<span class="keyword">uint32_t</span> w, <span class="keyword">uint32_t</span> h,PixelFormat format, <span class="keyword">uint32_t</span> flags,</span></span></span><br><span class="line"><span class="function"><span class="params">			<span class="keyword">const</span> sp&lt;IBinder&gt;&amp; parent, <span class="keyword">uint32_t</span> windowType, <span class="keyword">uint32_t</span> ownerUid,</span></span></span><br><span class="line"><span class="function"><span class="params">			sp&lt;IBinder&gt;* handle,</span></span></span><br><span class="line"><span class="function"><span class="params">			sp&lt;IGraphicBufferProducer&gt;* gbp)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> status_t <span class="title">destroySurface</span><span class="params">(<span class="keyword">const</span> sp&lt;IBinder&gt;&amp; handle)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> status_t <span class="title">clearLayerFrameStats</span><span class="params">(<span class="keyword">const</span> sp&lt;IBinder&gt;&amp; handle)</span> <span class="keyword">const</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> status_t <span class="title">getLayerFrameStats</span><span class="params">(<span class="keyword">const</span> sp&lt;IBinder&gt;&amp; handle, FrameStats* outStats)</span> <span class="keyword">const</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> status_t <span class="title">onTransact</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">uint32_t</span> code, <span class="keyword">const</span> Parcel&amp; data, Parcel* reply, <span class="keyword">uint32_t</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line">	sp&lt;Layer&gt; getParentLayer(<span class="keyword">bool</span>* outParentDied = <span class="literal">nullptr</span>) <span class="keyword">const</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// constant</span></span><br><span class="line">	sp&lt;SurfaceFlinger&gt; mFlinger;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// protected by mLock</span></span><br><span class="line">	DefaultKeyedVector&lt; wp&lt;IBinder&gt;, wp&lt;Layer&gt; &gt; mLayers;</span><br><span class="line">	wp&lt;Layer&gt; mParentLayer;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// thread-safe</span></span><br><span class="line">	<span class="keyword">mutable</span> Mutex mLock;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>在Client中， Surface的概念被偷梁换柱成了Layer. 调用SurfaceFlinger::createLayer方法, 在构造Layer结束后, SurfaceFlinger::createLayer调用了addClientLayer将Layer放置进入LayerStack中.<br>    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> SurfaceFlinger::addClientLayer(<span class="keyword">const</span> sp&lt;Client&gt;&amp; client,</span><br><span class="line">		<span class="keyword">const</span> sp&lt;IBinder&gt;&amp; handle,</span><br><span class="line">		<span class="keyword">const</span> sp&lt;IGraphicBufferProducer&gt;&amp; gbc,</span><br><span class="line">		<span class="keyword">const</span> sp&lt;Layer&gt;&amp; lbc,</span><br><span class="line">		<span class="keyword">const</span> sp&lt;Layer&gt;&amp; parent)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">// add this layer to the current state list</span></span><br><span class="line">	&#123;</span><br><span class="line">		Mutex::Autolock _l(mStateLock);</span><br><span class="line">		<span class="keyword">if</span> (mNumLayers &gt;= MAX_LAYERS) &#123;</span><br><span class="line">			ALOGE(<span class="string">"AddClientLayer failed, mNumLayers (%zu) &gt;= MAX_LAYERS (%zu)"</span>, mNumLayers,</span><br><span class="line">				  MAX_LAYERS);</span><br><span class="line">			<span class="keyword">return</span> NO_MEMORY;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (parent == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">			mCurrentState.layersSortedByZ.add(lbc);</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="keyword">if</span> (mCurrentState.layersSortedByZ.indexOf(parent) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">				ALOGE(<span class="string">"addClientLayer called with a removed parent"</span>);</span><br><span class="line">				<span class="keyword">return</span> NAME_NOT_FOUND;</span><br><span class="line">			&#125;</span><br><span class="line">			parent-&gt;addChild(lbc);</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		mGraphicBufferProducerList.add(IInterface::asBinder(gbc));</span><br><span class="line">		mLayersAdded = <span class="literal">true</span>;</span><br><span class="line">		mNumLayers++;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// attach this layer to the client</span></span><br><span class="line">	client-&gt;attachLayer(handle, lbc);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> NO_ERROR;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="Layer"><a href="#Layer" class="headerlink" title="Layer"></a>Layer</h1><p>Layer是图层合成中最重要的单元, Layer是一个Surface与SurfaceControl的合成体. 每一个Layer有一系列的属性用来定义它如何跟其他层进行交互. </p>
+<ul>
+<li>位置信息: 定义当前图层在显示屏上的位置， 包括四点位置, 以及对应的Z-order</li>
+<li>内容信息: 定义如何裁剪内容</li>
+<li>合成信息: 定义如何跟其他图层合成, 比如说blending模式， alpha值等</li>
+</ul>
+<p>在Layer对象第一次被引用时(onFirstRef), 一个新的BufferQueue与SurfaceFlingerConsumer被构造.<br>    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> Layer::onFirstRef() &#123;</span><br><span class="line">	<span class="comment">// Creates a custom BufferQueue for SurfaceFlingerConsumer to use</span></span><br><span class="line">	sp&lt;IGraphicBufferProducer&gt; producer;</span><br><span class="line">	sp&lt;IGraphicBufferConsumer&gt; consumer;</span><br><span class="line">	BufferQueue::createBufferQueue(&amp;producer, &amp;consumer, <span class="literal">true</span>);</span><br><span class="line">	mProducer = <span class="keyword">new</span> MonitoredProducer(producer, mFlinger, <span class="keyword">this</span>);</span><br><span class="line">	mSurfaceFlingerConsumer = <span class="keyword">new</span> SurfaceFlingerConsumer(consumer, mTextureName, <span class="keyword">this</span>);</span><br><span class="line">	mSurfaceFlingerConsumer-&gt;setConsumerUsageBits(getEffectiveUsage(<span class="number">0</span>));</span><br><span class="line">	mSurfaceFlingerConsumer-&gt;setContentsChangedListener(<span class="keyword">this</span>);</span><br><span class="line">	mSurfaceFlingerConsumer-&gt;setName(mName);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (mFlinger-&gt;isLayerTripleBufferingDisabled()) &#123;</span><br><span class="line">		mProducer-&gt;setMaxDequeuedBufferCount(<span class="number">2</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">const</span> sp&lt;<span class="keyword">const</span> DisplayDevice&gt; hw(mFlinger-&gt;getDefaultDisplayDevice());</span><br><span class="line">	updateTransformHint(hw);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>Layer对象的内部属性: </p>
+<ul>
+<li>regions信息: visibleRegion, converedRegion, visibleNonTransparentRegion, surfaceDamageRegion;</li>
+<li>sequence: Layer序号, 用于解决多个Layer拥有多个相同的Z-order信息时确定上下级关系</li>
+<li>State信息(mCurrentState, mDrawingState): <ul>
+<li>一个active几何位置信息;</li>
+<li>一个requested几何位置信息;</li>
+<li>z;</li>
+<li>layerStack 所属LayerStack;</li>
+<li>alpha;</li>
+<li>其他</li>
+</ul>
+</li>
+<li>mSurfaceFlingerConsumer, mProducer</li>
+</ul>
+<h1 id="SurfaceFlinger中的LayerStacks概念"><a href="#SurfaceFlinger中的LayerStacks概念" class="headerlink" title="SurfaceFlinger中的LayerStacks概念"></a>SurfaceFlinger中的LayerStacks概念</h1><p>我们知道Surface的概念，在SurfaceFlinger中的对应概念为Layer:<br>    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> SurfaceFlinger::rebuildLayerStacks() &#123;</span><br><span class="line">	ATRACE_CALL();</span><br><span class="line">	ALOGV(<span class="string">"rebuildLayerStacks"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// rebuild the visible layer list per screen</span></span><br><span class="line">	<span class="keyword">if</span> (CC_UNLIKELY(mVisibleRegionsDirty)) &#123;</span><br><span class="line">		ATRACE_CALL();</span><br><span class="line">		mVisibleRegionsDirty = <span class="literal">false</span>;</span><br><span class="line">		invalidateHwcGeometry();</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">size_t</span> dpy=<span class="number">0</span> ; dpy&lt;mDisplays.size() ; dpy++) &#123;</span><br><span class="line">			Region opaqueRegion;</span><br><span class="line">			Region dirtyRegion;</span><br><span class="line">			Vector&lt;sp&lt;Layer&gt;&gt; layersSortedByZ;</span><br><span class="line">			<span class="keyword">const</span> sp&lt;DisplayDevice&gt;&amp; displayDevice(mDisplays[dpy]);</span><br><span class="line">			<span class="function"><span class="keyword">const</span> Transform&amp; <span class="title">tr</span><span class="params">(displayDevice-&gt;getTransform())</span></span>;</span><br><span class="line">			<span class="function"><span class="keyword">const</span> Rect <span class="title">bounds</span><span class="params">(displayDevice-&gt;getBounds())</span></span>;</span><br><span class="line">			<span class="keyword">if</span> (displayDevice-&gt;isDisplayOn()) &#123;</span><br><span class="line">				<span class="comment">// 显示设备亮着情况下, 计算有效的显示区域</span></span><br><span class="line">				computeVisibleRegions(displayDevice, dirtyRegion, opaqueRegion);</span><br><span class="line"></span><br><span class="line">				<span class="comment">// 根据ZOrder遍历所有Layer</span></span><br><span class="line">				mDrawingState.traverseInZOrder([&amp;](Layer* layer) &#123;</span><br><span class="line">					<span class="keyword">if</span> (layer-&gt;belongsToDisplay(displayDevice-&gt;getLayerStack(),</span><br><span class="line">								displayDevice-&gt;isPrimary())) &#123;</span><br><span class="line">						Region drawRegion(tr.transform(</span><br><span class="line">								layer-&gt;visibleNonTransparentRegion));</span><br><span class="line">						drawRegion.andSelf(bounds);</span><br><span class="line">						<span class="keyword">if</span> (!drawRegion.isEmpty()) &#123;</span><br><span class="line">							layersSortedByZ.add(layer);</span><br><span class="line">						&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">							<span class="comment">// Clear out the HWC layer if this layer was</span></span><br><span class="line">							<span class="comment">// previously visible, but no longer is</span></span><br><span class="line">							layer-&gt;destroyHwcLayer(</span><br><span class="line">									displayDevice-&gt;getHwcDisplayId());</span><br><span class="line">						&#125;</span><br><span class="line">					&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">						<span class="comment">// WM changes displayDevice-&gt;layerStack upon sleep/awake.</span></span><br><span class="line">						<span class="comment">// Here we make sure we delete the HWC layers even if</span></span><br><span class="line">						<span class="comment">// WM changed their layer stack.</span></span><br><span class="line">						layer-&gt;destroyHwcLayer(displayDevice-&gt;getHwcDisplayId());</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;);</span><br><span class="line">			&#125;</span><br><span class="line">			displayDevice-&gt;setVisibleLayersSortedByZ(layersSortedByZ);</span><br><span class="line">			displayDevice-&gt;undefinedRegion.<span class="built_in">set</span>(bounds);</span><br><span class="line">			displayDevice-&gt;undefinedRegion.subtractSelf(</span><br><span class="line">					tr.transform(opaqueRegion));</span><br><span class="line">			displayDevice-&gt;dirtyRegion.orSelf(dirtyRegion);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>mDrawingState是SurfaceFlinger内部定义的一个类, 结构如下:<br>    <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">State</span>&#123;</span></span><br><span class="line">		LayerVector layersSortedByZ;</span><br><span class="line">		DefaultKeyedVector&lt; wp&lt;IBinder&gt;, DisplayDeviceState&gt; displays;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/android/" rel="tag"># android</a>
+          
+            <a href="/tags/service/" rel="tag"># service</a>
+          
+            <a href="/tags/surfacefling/" rel="tag"># surfacefling</a>
+          
+            <a href="/tags/BufferQueue/" rel="tag"># BufferQueue</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/12/03/android-app-verify/" rel="next" title="Android Applink校验过程">
+                <i class="fa fa-chevron-left"></i> Android Applink校验过程
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="ldkxingzhe">
+            
+              <p class="site-author-name" itemprop="name">ldkxingzhe</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">13</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#基本概念"><span class="nav-number">1.</span> <span class="nav-text">基本概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#中间件BufferQueue"><span class="nav-number">2.</span> <span class="nav-text">中间件BufferQueue</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#生产者视角-IGraphicBufferProducer"><span class="nav-number">2.1.</span> <span class="nav-text">生产者视角: IGraphicBufferProducer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#消费者视角-IGraphicBufferConsumer"><span class="nav-number">2.2.</span> <span class="nav-text">消费者视角: IGraphicBufferConsumer</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SurfaceSession"><span class="nav-number">3.</span> <span class="nav-text">SurfaceSession:</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SurfaceControl"><span class="nav-number">4.</span> <span class="nav-text">SurfaceControl:</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ISurfaceComposerClient"><span class="nav-number">5.</span> <span class="nav-text">ISurfaceComposerClient</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Layer"><span class="nav-number">6.</span> <span class="nav-text">Layer</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SurfaceFlinger中的LayerStacks概念"><span class="nav-number">7.</span> <span class="nav-text">SurfaceFlinger中的LayerStacks概念</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ldkxingzhe</span>
+</div>
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
