@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Android,WindowManagerService,WM,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="WM服务是Android的窗口管理器, 提供了多Window合成, 手势分发等服务.   与相应的UI进程通过IWindowSession与IWindow接口通信 与SurfaceFlinger服务通过SurfaceSession通信, 并向UI进程暴露Surface用于绘制UI">
+<meta name="keywords" content="Android,WindowManagerService,WM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android Service之WindowManagerService">
+<meta property="og:url" content="https://blog.ldkxingzhe.top/2020/02/10/Android-Service-WM/index.html">
+<meta property="og:site_name" content="ldkxingzhe&#39;s blog">
+<meta property="og:description" content="WM服务是Android的窗口管理器, 提供了多Window合成, 手势分发等服务.   与相应的UI进程通过IWindowSession与IWindow接口通信 与SurfaceFlinger服务通过SurfaceSession通信, 并向UI进程暴露Surface用于绘制UI">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2020-02-10T03:53:57.717Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Android Service之WindowManagerService">
+<meta name="twitter:description" content="WM服务是Android的窗口管理器, 提供了多Window合成, 手势分发等服务.   与相应的UI进程通过IWindowSession与IWindow接口通信 与SurfaceFlinger服务通过SurfaceSession通信, 并向UI进程暴露Surface用于绘制UI">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://blog.ldkxingzhe.top/2020/02/10/Android-Service-WM/">
+
+
+
+
+
+  <title>Android Service之WindowManagerService | ldkxingzhe's blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">ldkxingzhe's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.ldkxingzhe.top/2020/02/10/Android-Service-WM/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="ldkxingzhe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ldkxingzhe's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Android Service之WindowManagerService</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-02-10T11:45:09+08:00">
+                2020-02-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>WM服务是Android的窗口管理器, 提供了多Window合成, 手势分发等服务. </p>
+<ul>
+<li>与相应的UI进程通过IWindowSession与IWindow接口通信</li>
+<li>与SurfaceFlinger服务通过SurfaceSession通信, 并向UI进程暴露Surface用于绘制UI<a id="more"></a>
+
+</li>
+</ul>
+<h1 id="多窗口合成相关"><a href="#多窗口合成相关" class="headerlink" title="多窗口合成相关"></a>多窗口合成相关</h1><ul>
+<li>WM内部维护了一个Session的ArraySet用于记录一系列活跃的, 与客户端通信的会话。</li>
+<li>维护了一个已WindowToken为Key的， WindowState为Value的字典， 用于记录Window信息</li>
+<li>维护了多个WindowState列表表示不同状态</li>
+</ul>
+<h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><h3 id="Session是什么"><a href="#Session是什么" class="headerlink" title="Session是什么"></a>Session是什么</h3><p>Session代表一个有效的客户端会话，一个进程只有一个， 用于与WM通信交流。 </p>
+<p>对对应的UI进程而言提供IWindowSession实现, 可跨进程传输. 由WindowManagerService的openSession方法触发构造, 在客户进程的触发条件是WindowManagerGLobal.getWindowSession. </p>
+<p><code>由Session.addToDisplayXXX -&gt; WindowManagerService.addWindow -&gt; WindowState.attach -&gt; Session.windowAddedLocked添加进入WM.sessions中， 客户端的触发函数是: ViewRootImpl.setView方法， 额， ViewRootImpl的Session引用通过WindowManagerGlobal.getWindowSession获取。</code></p>
+<p>对WM服务而言, </p>
+<ul>
+<li>内部属性mSurfaceSession: 用于与SurfaceFlinger ipc通信</li>
+</ul>
+<h3 id="通信流程"><a href="#通信流程" class="headerlink" title="通信流程"></a>通信流程</h3><p>WM服务与相应的UI进程暴露了两个接口用于通信: IWindowSession和IWindow</p>
+<ul>
+<li>第一步: 打开会话Session, 在UI进程WindowManagerService#openSession创建一个对应进程唯一的Session</li>
+<li>第二步: 在UI进程(由ViewRootImpl的setView触发)中调用IWindowSession#add, addToDisplay等add方法将一个Window添加到WindowManagerService中</li>
+<li>第三步: 在UI进程中, 若Window的属性发生改变, 调用IWindowSession#relayout告知WindowManagerService属性改变, 并且返回对应的Surface</li>
+<li>第四步: WM服务通过IWindow接口告知Window, resize(窗口大小, 系统组件, 键盘等大小改变), moved(坐标改变), dispatchAppVisibility(应用可见性改变), dispatchGetNewSurface, WindowFocusChanged, closeSystemDialogs,</li>
+</ul>
+<h3 id="AppWindowContainerControler"><a href="#AppWindowContainerControler" class="headerlink" title="AppWindowContainerControler"></a>AppWindowContainerControler</h3><p>可以理解为暴露给ActivityManagerService的接口. 在AM服务(ActivityManagerService)中的ActivityRecord中调用创建AppWindowContainerControler, 也就是说Activity的IBinder token是由AM服务传递过来的, 用来构造WindowToken类. </p>
+<h3 id="WindowManagerService是如何记录Window信息的"><a href="#WindowManagerService是如何记录Window信息的" class="headerlink" title="WindowManagerService是如何记录Window信息的"></a>WindowManagerService是如何记录Window信息的</h3><p>在WM服务中, 使用WindowState对象记录Window的信息. 通过RootWindowContainer, DisplayContent, WindowState组成一个WindowState Tree:</p>
+<ul>
+<li>RootWindowContainer: 由WindowManagerService持有, 其内部是多个DisplayContent<ul>
+<li>DisplayContent: 表示一个显示屏, 其内部主要是DisplayChildWindowContainer. <ul>
+<li>DisplayChildWindowContainer: 包含多个TaskStack, 表示一系列的WindowState</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ol>
+<li><p>DisplayContent</p>
+<p>同样是一个WindowContainer， mChildren中放置的是DisplayChildWindowContainer. </p>
+<ul>
+<li>mTaskStackContainers: 用于存放一个个StackTask</li>
+<li>mAboveAppWindowContainers: 与App无关的, 如StatusBar</li>
+<li>mBelowAppWindowContainers: 与App无关的, 如壁纸</li>
+<li>mImeiWindowContainers: 输入框</li>
+<li>mLayerController: WindowLayersController</li>
+</ul>
+<p>perrformLayout:</p>
+<ul>
+<li>调用WindowManagerPolicy的beginLayoutLw, 实现为PhoneWindowManager</li>
+<li>首先forAllWindows遍历所有的未attached的Window</li>
+<li>然后forAllWindows遍历所有attached的windows</li>
+</ul>
+<p>对所有window进行Layout时， 均会调用WindowManagerPolicy的layoutWindowLw方法</p>
+<p>applaySurfaceChangesTransaction:</p>
+<ul>
+<li>放置壁纸</li>
+<li>调用自身的performLayout计算各个Window的位置信息</li>
+<li>自上而下调用mApplySurfaceChangesTtransaction</li>
+</ul>
+</li>
+<li><p>WindowState</p>
+<p>在WindowManager中记录一个Window的所有属性, </p>
+<p>包含以下属性: </p>
+<ul>
+<li><p>mSession: Session: 这个Session每个进程有一个</p>
+</li>
+<li><p>mClient: IWindow: 对应的Window的Binder接口</p>
+</li>
+<li><p>mToken: WindowTtoken</p>
+</li>
+<li><p>mAppToken: AppWindowToken, 如果是一个app窗口， 则mAppToken与mToken相同</p>
+</li>
+<li><p>mIsChildWindow</p>
+</li>
+<li><p>mBaseLayer, mSubLayer</p>
+</li>
+<li><p>mLayoutAttached, mIsImWindow, mIsWallpaper, mIsFloatingLayer</p>
+</li>
+<li><p>mViewVisibility, mSystemUiVisibility, mAppOpVisibility</p>
+</li>
+<li><p>mAppFreezing, mHidden, mWallpaperVisible, mResizeMode</p>
+</li>
+<li><p>mLayer, mHaveFrame, mObscured, mTurnOnScreen</p>
+</li>
+<li><p>mContentInsets, mLastContentInsets</p>
+</li>
+<li><p>mWinAnimator: WindowStateAnimator</p>
+</li>
+</ul>
+<p>computeFrameLw:</p>
+<ul>
+<li>如果是将被替换, 动画退出状态 不计算</li>
+<li>判断inFullscreenContainer, 大部分情况下是true</li>
+<li>判断windowsAreFloating, 大部分情况下是false</li>
+</ul>
+<p>定义了多个Frame的定义:</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br></pre></td><td class="code"><pre><span class="line">    <span class="tag">&lt;<span class="name">table</span> <span class="attr">border</span>=<span class="string">"2"</span> <span class="attr">cellspacing</span>=<span class="string">"0"</span> <span class="attr">cellpadding</span>=<span class="string">"6"</span> <span class="attr">rules</span>=<span class="string">"groups"</span> <span class="attr">frame</span>=<span class="string">"hsides"</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">colgroup</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">col</span>  <span class="attr">class</span>=<span class="string">"org-left"</span> /&gt;</span></span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">col</span>  <span class="attr">class</span>=<span class="string">"org-left"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">colgroup</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tbody</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mFrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>应用看到的真实Frame大小, 位于屏幕坐标系中, 也是DecorView的大小<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mContainingFrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>&amp;#xa0;<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mParentFrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>&amp;#xa0;<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mDisplayFrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>当前TaskStack所占屏幕区域, 大部分是否就是整个屏幕大小<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mOverscanFrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>包含过扫描的屏幕部分, 一般针对电视而言<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mStableFrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>无论状态栏与导航栏是否可见, 均不包含它，一般是一个定值<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mDecorFrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>不包含状态栏与导航栏的区域, 在状态栏与导航栏可见时其值与mStableFrame相同<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mContentFrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>等于mDecorFrame减去输入法占用的区域(注释错误), 表示App的内容区<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mVisibleFrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>兼容旧版App使用， 一般与mContentFrame相同(注释错误), 表示mContentFrame减去输入法<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mOutsetFrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>包含不想绘制图形衬边的Frame, 如果有衬边, 比mContentFrame大一圈<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>mInsetFrrame<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">"org-left"</span>&gt;</span>这个跟multiwindow模式有关<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tbody</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">table</span>&gt;</span></span><br><span class="line">	```	</span><br><span class="line">    1.  WindowState接口</span><br><span class="line">    </span><br><span class="line">        -   int getOwningUid():  获取窗口的所属uid</span><br><span class="line">        -   String getOwningPackage()</span><br><span class="line">        -   void computeFrameLw(Rect parentFrame, Rect displayFrame, Rect overlayFrame, Rect contentFrame, Rect visibleFrame, Rect decorFrame, Rect stableFrame, Rect outsetFrame)</span><br><span class="line">        -   Rect getFrameLw(): 获取window当前被window manager赋予的frame</span><br><span class="line">        -   Point getShowPositionLw(): 当前window的位置</span><br><span class="line">        -   Rect getDisplayFrameLw()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">## 多窗口布局相关</span><br><span class="line"></span><br><span class="line">布局策略由WindowManagerPolicy这个类提供布局抽象,　并且定义了WindowState, InputConsumer, StartingSurface, WindowManagerFuncs(用于回调WM服务), PointerEventListener. 其中WindowManagerPolicy在手机上的实现为PhoneWindowManager, 用于在手机屏幕上进行窗口合成, 需要留意的接口如下:</span><br><span class="line"></span><br><span class="line">-   void beginLayoutLw: 开始布局当前屏幕</span><br><span class="line">-   void getContentRectLw(Rect r): 用于返回当前屏幕中可用于App展示的位置</span><br><span class="line">-   void layoutWindowLw(WindowState win, WindowState attached): 当前屏幕中的任意一个Window layout时需要调用此方法</span><br><span class="line">-   int focusChanged(WindowState lastFocus, WindowState newFocus)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">### PhoneWindowManager.java</span><br><span class="line"></span><br><span class="line">    # 用来dump PhoneWindowManager的状态信息</span><br><span class="line">    adb shell dumpsys window policy</span><br><span class="line"></span><br><span class="line">有几个Frame概念需要了解</span><br><span class="line"></span><br><span class="line">-   mOverscanScreenLeft, mOverscanScreenTop, mOverscanScreenWidth, mOverscanScreenHeight: 包含过扫描区域的空间, 一般在电视才有意义</span><br><span class="line">-   mUnrestrictedScreenLeft(Top, Width, Height): 当前屏幕的可见区域, 不会包含过扫描区域. 一般与mOverrscanScreenXXX相同</span><br><span class="line">-   mRestrictedOverscanScreenLeft(Top, Width, Height): 一般指mOverscanScreenXxx不包含navigation bar的区域</span><br><span class="line">-   mRestrictedScreenLeft(Top, Width, Height): 当前屏幕的大小, 如果状态栏不能隐藏, 不包含状态栏与导航栏的部分</span><br><span class="line">-   mSystemLeft(Top, Right, Bottom): 在Layout阶段, 系统UI的屏幕边界</span><br><span class="line">-   mStableleft(Top, Right, Bottom): 不包含状态栏， 导航栏的部分. 用于提供给StableContent的区域</span><br><span class="line">-   mStableFullscreenLeft(Top, Right, Bottom): 与mStableXxx类似， 但是包含状态栏， 用于同时满足全屏, Stable属性</span><br><span class="line">-   mForceImmersiveLeft(Top, Right, Bottom): 用于沉浸式</span><br><span class="line">-   mCurLeft(Top, Right, Bottom): 系统装饰(状态栏, 导航栏, 输入法Dock)的边界</span><br><span class="line">-   mContentLeft(Top, Right, Bottom): window展示内容给用户的区域, 一般与mCurXxx相同(除了屏幕装饰有insets时, 此时比mCurXX区域大一点)</span><br><span class="line">-   mDockLeft(Top, Right, Bottom): 输入法Window放置的位置</span><br><span class="line"></span><br><span class="line">需要注意的是mContentLeft(xxx)与WindowState中的content不是一回事, PhoneWindowManager中的mContentLeft是WindowState中的visibleFrame对应的大小.</span><br><span class="line"></span><br><span class="line">在PhoneWindowManager.java的beginLayoutLw方法中, 在手机中， mOverscanScreenXxx, mUnrestrictedLeft, mSystemXX, mStableLeft一般均是屏幕大小(现代显示屏时没有oversacan这个值的)。 然后layout 导航栏(layoutNavigationVar), 然后layout状态栏(layoutStatusBar)</span><br><span class="line"></span><br><span class="line">layout导航栏, 确定导航栏位置(底部, 右边, 左边), 仅分析导航栏位于底部的case: </span><br><span class="line"></span><br><span class="line">-   计算得到:mStableBottom = mStableFullscreenBottom = displayHeight - overscanBottom - navigationBarHeight.</span><br><span class="line">-   若导航栏可见且不是瞬时可见的, 则mContentBottom = mSystemBottom = mDockBottom = 导航栏顶部.</span><br><span class="line"></span><br><span class="line">layout状态栏: </span><br><span class="line"></span><br><span class="line">-   状态栏可见且不透明: mContentTop = mDockTop = mUnrestrictedTop(一般为0) + mStatusBarHeight,</span><br><span class="line">-   状态栏可见, 没有动画, 不透明, 不瞬时, 最近没有透明过 mSystemTop = mUnrestrictedTop + mStatusBarHeight</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">### WindowSurfacePlacer.java</span><br><span class="line"></span><br><span class="line">用于放置windows与其surfaces, 整个WindowManagerService只有一个. </span><br><span class="line">	```java</span><br><span class="line">    final void performSurfacePlacement(boolean force) &#123;</span><br><span class="line">    	if (mDeferDepth &gt; 0 &amp;&amp; !force) &#123;</span><br><span class="line">    		return;</span><br><span class="line">    	&#125;</span><br><span class="line">    	int loopCount = 6;</span><br><span class="line">    	do &#123;</span><br><span class="line">    		mTraversalScheduled = false;</span><br><span class="line">    		performSurfacePlacementLoop();</span><br><span class="line">    		mService.mAnimationHandler.removeCallbacks(mPerformSurfacePlacement);</span><br><span class="line">    		loopCount--;</span><br><span class="line">    	&#125; while (mTraversalScheduled &amp;&amp; loopCount &gt; 0);</span><br><span class="line">    	mService.mRoot.mWallpaperActionPending = false;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>其performSurfacePlacement用于触发Window的layout. </p>
+<p>其由:</p>
+<ul>
+<li>ViewRootImpl的relayoutWindow触发</li>
+<li>AppWindowToken的setVisibility，可以由AM的ActivityRecord触发</li>
+<li>AppWindowToken的finishRelaunching</li>
+<li>AppWindowToken的stopFreezingScreen</li>
+<li>DisplayContent的layoutAndAssignWindowLayersIfNeeded</li>
+<li>StackWindowController的resize</li>
+<li>WindowToke的setExiting</li>
+</ul>
+<h2 id="Surface操控"><a href="#Surface操控" class="headerlink" title="Surface操控"></a>Surface操控</h2><p>WindowManagerService在进行窗口布局完成后需要通知SurfaceFlinger窗口位置改变, 那么WM服务如何记录Surface的对应关系, 并且是什么时候通知SurfaceFlinger的呢. </p>
+<p>WindowState对象中有一个WindowStateAnimator属性, WindowStateAnimator的内部属性mSurfaceController作为操控SurfaceController的控制器.</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Android/" rel="tag"># Android</a>
+          
+            <a href="/tags/WindowManagerService/" rel="tag"># WindowManagerService</a>
+          
+            <a href="/tags/WM/" rel="tag"># WM</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/12/10/android-service-surfacefling/" rel="next" title="Android Service 之 SurfaceFlinger">
+                <i class="fa fa-chevron-left"></i> Android Service 之 SurfaceFlinger
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="ldkxingzhe">
+            
+              <p class="site-author-name" itemprop="name">ldkxingzhe</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#多窗口合成相关"><span class="nav-number">1.</span> <span class="nav-text">多窗口合成相关</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#基本概念"><span class="nav-number">1.1.</span> <span class="nav-text">基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Session是什么"><span class="nav-number">1.1.1.</span> <span class="nav-text">Session是什么</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#通信流程"><span class="nav-number">1.1.2.</span> <span class="nav-text">通信流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AppWindowContainerControler"><span class="nav-number">1.1.3.</span> <span class="nav-text">AppWindowContainerControler</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WindowManagerService是如何记录Window信息的"><span class="nav-number">1.1.4.</span> <span class="nav-text">WindowManagerService是如何记录Window信息的</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Surface操控"><span class="nav-number">1.2.</span> <span class="nav-text">Surface操控</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ldkxingzhe</span>
+</div>
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
