@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Home Server</title>
+        <style type="text/css">
+            body {
+                margin: 0px;
+            }
+            iframe {
+                border: none;
+                width: 100%;
+                height: 100%;
+                position: absolute;
+            }
+        </style>       
+    </head>
+
+    <iframe src="https://k2k5565869.zicp.vip:27570/"></iframe>
+    <script>
+        window.addEventListener('message', function(message) {
+            var data = message.data;
+            if (data.startsWith('title=')){
+                document.title = data.substring(6);
+            }
+        });
+    </script>
+</html>
