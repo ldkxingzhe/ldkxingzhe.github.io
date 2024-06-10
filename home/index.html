@@ -12,16 +12,42 @@
                 height: 100%;
                 position: absolute;
             }
-        </style>       
+        </style>
+        <script>
+            window.addEventListener('message', function(message) {
+                var data = message.data;
+                if (!data.url || !data.title) return;
+                document.title = data.title;
+                const nextState = { additionalInformation: 'Updated the URL with JS' };
+                const path = data.url.replace('https://k2k5565869.zicp.vip:27570', '');
+                if (path.length == 0 || path === '/') {
+                    return;
+                }
+                const url = new URL(document.location.href);
+                const old = url.searchParams.get("path");
+                if(old == path) {
+                    return;
+                }
+                url.searchParams.set("path", path);
+                window.history.pushState(nextState, data.title, url);       
+            });
+        </script>     
     </head>
-
-    <iframe src="https://k2k5565869.zicp.vip:27570/"></iframe>
-    <script>
-        window.addEventListener('message', function(message) {
-            var data = message.data;
-            if (data.startsWith('title=')){
-                document.title = data.substring(6);
-            }
-        });
-    </script>
+    <body>
+        <iframe id="frame"></iframe>
+        <script>
+            var frame = document.getElementById("frame");
+            const actionRefresh = () => {
+                var path = new URL(document.location.href).searchParams.get("path");
+                if(!path) {
+                    path = "";
+                }
+                frame.src="https://k2k5565869.zicp.vip:27570" + path;
+            };
+            actionRefresh();
+            window.addEventListener('popstate', (event) => {
+                actionRefresh();
+            });
+        </script>
+    </body>
 </html>
