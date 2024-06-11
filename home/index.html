@@ -14,12 +14,22 @@
             }
         </style>
         <script>
-            window.addEventListener('message', function(message) {
+            window.serverDomain = async function() {
+                const serverResponse = await fetch('https://server:27570');
+                if(serverResponse.status == 200) {
+                    // 局域网本地
+                    window.serverDomain = () => 'https://server:27570';
+                } else {
+                    window.serverDomain = () => 'https://k2k5565869.zicp.vip:27570';
+                }
+                return window.serverDomain();
+            };
+            window.addEventListener('message', async function(message) {
                 var data = message.data;
                 if (!data.url || !data.title) return;
                 document.title = data.title;
                 const nextState = { additionalInformation: 'Updated the URL with JS' };
-                const path = data.url.replace('https://k2k5565869.zicp.vip:27570', '');
+                const path = data.url.replace(await window.serverDomain(), '');
                 if (path.length == 0 || path === '/') {
                     return;
                 }
@@ -37,16 +47,16 @@
         <iframe id="frame"></iframe>
         <script>
             var frame = document.getElementById("frame");
-            const actionRefresh = () => {
+            const actionRefresh = async () => {
                 var path = new URL(document.location.href).searchParams.get("path");
                 if(!path) {
                     path = "";
                 }
-                frame.src="https://k2k5565869.zicp.vip:27570" + path;
+                frame.src=await window.serverDomain() + path;
             };
             actionRefresh();
-            window.addEventListener('popstate', (event) => {
-                actionRefresh();
+            window.addEventListener('popstate', async (event) => {
+                await actionRefresh();
             });
         </script>
     </body>
